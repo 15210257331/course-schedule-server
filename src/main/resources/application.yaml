@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: course-schedule-server
+  profiles:
+    active: dev
