@@ -3,3 +3,17 @@ spring:
     name: course-schedule-server
   profiles:
     active: dev
+  jackson:
+    time-zone: Asia/Shanghai
+
+server:
+  port: 8080
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: teacheros-course-schedule-secret-key-please-change-in-production-2026
+  expire-seconds: 604800

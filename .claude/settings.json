@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -o '\"/dashboard[^\"]*\"\\\\|`/dashboard[^`]*`\\\\|path:\"[^\"]*\"\\\\|name:\"[^\"]*\"' /tmp/sstz_main.js)",
+      "Bash(node -e ' *)",
+      "Bash(curl -sL --max-time 60 \"https://www.sstz.info/assets/router-BRJh1A7w.js\" -o /tmp/sstz_router.js)",
+      "Bash(npm run *)",
+      "Bash(grep -rn '#[0-9a-fA-F]\\\\{3,8\\\\}\\\\|--teac-' src/views src/components)",
+      "Bash(grep -n '#[0-9a-fA-F]\\\\{3,8\\\\}\\\\|--teac-' src/views/income/index.vue src/views/profile/index.vue src/views/settings/index.vue src/views/organizations/index.vue src/views/salary-rules/index.vue src/components/CourseFormDialog.vue)",
+      "Bash(npx vite *)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/chenxiaofei/.nvm/versions/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(command -v volta nvm fnm)"
+    ]
+  }
+}
