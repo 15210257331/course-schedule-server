@@ -15,6 +15,7 @@ public class Organization {
     private String contactPhone;
     private String address;
     private BigDecimal defaultFee;
+    private String color;
     private String remark;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

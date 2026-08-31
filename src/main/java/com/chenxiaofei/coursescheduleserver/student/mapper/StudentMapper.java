@@ -13,6 +13,8 @@ public interface StudentMapper {
 
     Student findById(@Param("id") Long id, @Param("userId") Long userId);
 
+    Student findByName(@Param("userId") Long userId, @Param("name") String name);
+
     int insert(Student s);
 
     int update(Student s);

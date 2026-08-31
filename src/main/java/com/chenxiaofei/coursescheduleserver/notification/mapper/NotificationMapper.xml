@@ -17,6 +17,10 @@
         VALUES(#{userId}, #{type}, #{title}, #{content}, #{courseId}, #{remindAt})
     </insert>
 
+    <select id="countByCourse" resultType="int">
+        SELECT COUNT(*) FROM notification WHERE user_id = #{userId} AND course_id = #{courseId}
+    </select>
+
     <update id="markRead">
         UPDATE notification SET is_read = 1 WHERE id = #{id} AND user_id = #{userId}
     </update>

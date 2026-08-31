@@ -1,6 +1,8 @@
 package com.chenxiaofei.coursescheduleserver.student.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
+import com.chenxiaofei.coursescheduleserver.coursetemplate.mapper.CourseTemplateMapper;
 import com.chenxiaofei.coursescheduleserver.student.dto.StudentRequest;
 import com.chenxiaofei.coursescheduleserver.student.entity.Student;
 import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
@@ -13,9 +15,13 @@ import java.util.List;
 public class StudentService {
 
     private final StudentMapper mapper;
+    private final CourseMapper courseMapper;
+    private final CourseTemplateMapper courseTemplateMapper;
 
-    public StudentService(StudentMapper mapper) {
+    public StudentService(StudentMapper mapper, CourseMapper courseMapper, CourseTemplateMapper courseTemplateMapper) {
         this.mapper = mapper;
+        this.courseMapper = courseMapper;
+        this.courseTemplateMapper = courseTemplateMapper;
     }
 
     public List<Student> list() {
@@ -50,7 +56,15 @@ public class StudentService {
 
     public void delete(Long id) {
         get(id);
-        mapper.delete(id, UserContext.getUserId());
+        Long userId = UserContext.getUserId();
+        // 存在关联课程或课程模板时禁止删除，避免产生孤儿数据
+        if (courseMapper.countByStudent(userId, id) > 0) {
+            throw new BusinessException(400, "该学生名下还有课程，无法删除");
+        }
+        if (courseTemplateMapper.countByStudent(userId, id, null) > 0) {
+            throw new BusinessException(400, "该学生已有课程模板，无法删除");
+        }
+        mapper.delete(id, userId);
     }
 
     private void apply(Student s, StudentRequest request) {

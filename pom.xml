@@ -102,6 +102,18 @@
     </dependencies>
 
     <build>
+        <!-- src/main/java 下的 MyBatis XML 需作为资源打包进 classpath -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/java</directory>
+                <includes>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

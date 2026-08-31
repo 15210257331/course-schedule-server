@@ -1,17 +1,16 @@
-package com.chenxiaofei.coursescheduleserver.course.dto;
+package com.chenxiaofei.coursescheduleserver.coursetemplate.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
-public class CourseRequest {
+public class CourseTemplateRequest {
 
-    @NotBlank(message = "课程标题不能为空")
+    @NotBlank(message = "模板标题不能为空")
     private String title;
 
     private Long studentId;
@@ -21,20 +20,15 @@ public class CourseRequest {
     private String stage;
     private String courseType;
 
-    @NotNull(message = "开始时间不能为空")
-    private LocalDateTime startTime;
-
-    @NotNull(message = "结束时间不能为空")
-    private LocalDateTime endTime;
+    @NotNull(message = "默认时长不能为空")
+    @Min(value = 15, message = "默认时长至少 15 分钟")
+    private Integer durationMinutes;
 
     private BigDecimal fee;
     private Boolean feeManual;
     private String location;
     private String note;
-    private String status;
     private String color;
-    private Integer reminderOffsetMinutes;
+    /** 拖入日历时的重复规则：daily/weekly，NULL 不重复 */
     private String repeatType;
-    private LocalDate repeatEndDate;
-    private Long parentId;
 }

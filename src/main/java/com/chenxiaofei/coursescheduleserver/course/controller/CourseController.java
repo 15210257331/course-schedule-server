@@ -1,7 +1,9 @@
 package com.chenxiaofei.coursescheduleserver.course.controller;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
+import com.chenxiaofei.coursescheduleserver.course.dto.CoursePageRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.MoveCourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
@@ -34,11 +36,18 @@ public class CourseController {
     @GetMapping
     public Result<List<Course>> list(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
+            @RequestParam(required = false) String title) {
         if (start == null || end == null) {
             throw new BusinessException(400, "缺少 start/end 时间范围参数");
         }
-        return Result.ok(courseService.listInRange(start, end));
+        String kw = (title == null || title.isBlank()) ? null : title.trim();
+        return Result.ok(courseService.listInRange(start, end, kw));
+    }
+
+    @PostMapping("/page")
+    public Result<PageResult<Course>> page(@RequestBody CoursePageRequest request) {
+        return Result.ok(courseService.page(request));
     }
 
     @GetMapping("/{id}")

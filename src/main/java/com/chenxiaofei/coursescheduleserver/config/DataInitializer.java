@@ -1,11 +1,9 @@
 package com.chenxiaofei.coursescheduleserver.config;
 
 import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
-import com.chenxiaofei.coursescheduleserver.salaryrule.entity.SalaryRule;
 import com.chenxiaofei.coursescheduleserver.student.entity.Student;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.organization.mapper.OrganizationMapper;
-import com.chenxiaofei.coursescheduleserver.salaryrule.mapper.SalaryRuleMapper;
 import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import org.mindrot.jbcrypt.BCrypt;
@@ -27,14 +25,12 @@ public class DataInitializer implements CommandLineRunner {
     private final UserMapper userMapper;
     private final OrganizationMapper organizationMapper;
     private final StudentMapper studentMapper;
-    private final SalaryRuleMapper salaryRuleMapper;
 
     public DataInitializer(UserMapper userMapper, OrganizationMapper organizationMapper,
-                           StudentMapper studentMapper, SalaryRuleMapper salaryRuleMapper) {
+                           StudentMapper studentMapper) {
         this.userMapper = userMapper;
         this.organizationMapper = organizationMapper;
         this.studentMapper = studentMapper;
-        this.salaryRuleMapper = salaryRuleMapper;
     }
 
     @Override
@@ -63,10 +59,6 @@ public class DataInitializer implements CommandLineRunner {
         studentMapper.insert(stu(uid, "王五", "初二", "英语", xes.getId(), "300"));
         studentMapper.insert(stu(uid, "赵六", "高三", "数学", xes.getId(), "400"));
 
-        salaryRuleMapper.insert(rule(uid, xdf.getId(), "初中", "数学", "300"));
-        salaryRuleMapper.insert(rule(uid, xdf.getId(), "高中", "数学", "350"));
-        salaryRuleMapper.insert(rule(uid, xes.getId(), null, "英语", "280"));
-
         log.info("初始化完成。默认账号：admin / admin123");
     }
 
@@ -90,15 +82,5 @@ public class DataInitializer implements CommandLineRunner {
         s.setOrganizationId(orgId);
         s.setFee(new BigDecimal(fee));
         return s;
-    }
-
-    private SalaryRule rule(Long uid, Long orgId, String grade, String subject, String fee) {
-        SalaryRule r = new SalaryRule();
-        r.setUserId(uid);
-        r.setOrganizationId(orgId);
-        r.setGrade(grade);
-        r.setSubject(subject);
-        r.setHourlyFee(new BigDecimal(fee));
-        return r;
     }
 }

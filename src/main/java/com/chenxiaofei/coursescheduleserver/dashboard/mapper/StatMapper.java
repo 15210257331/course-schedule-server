@@ -32,6 +32,12 @@ public interface StatMapper {
     List<Map<String, Object>> incomeByStudent(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                                               @Param("end") LocalDateTime end);
 
-    List<Map<String, Object>> incomeBySubject(@Param("userId") Long userId, @Param("start") LocalDateTime start,
-                                              @Param("end") LocalDateTime end);
+    List<Map<String, Object>> incomeByStage(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                                            @Param("end") LocalDateTime end);
+
+    List<Map<String, Object>> feeDetailByStudent(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                                                 @Param("end") LocalDateTime end);
+
+    List<Map<String, Object>> feeDetailByOrganization(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                                                      @Param("end") LocalDateTime end);
 }

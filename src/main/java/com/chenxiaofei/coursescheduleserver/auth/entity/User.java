@@ -14,6 +14,8 @@ public class User {
     private String avatar;
     private String email;
     private String phone;
+    /** 任教学科，逗号分隔（如 "数学,物理"） */
+    private String subjects;
     private String role;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

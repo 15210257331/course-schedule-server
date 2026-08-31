@@ -11,14 +11,18 @@
         SELECT * FROM `user` WHERE username = #{username}
     </select>
 
+    <select id="listAllIds" resultType="long">
+        SELECT id FROM `user`
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO `user`(username, password, nickname, avatar, email, phone, role)
-        VALUES(#{username}, #{password}, #{nickname}, #{avatar}, #{email}, #{phone}, #{role})
+        INSERT INTO `user`(username, password, nickname, avatar, email, phone, subjects, role)
+        VALUES(#{username}, #{password}, #{nickname}, #{avatar}, #{email}, #{phone}, #{subjects}, #{role})
     </insert>
 
     <update id="updateProfile">
         UPDATE `user` SET nickname = #{nickname}, avatar = #{avatar}, email = #{email},
-        phone = #{phone} WHERE id = #{id}
+        phone = #{phone}, subjects = #{subjects} WHERE id = #{id}
     </update>
 
     <update id="updatePassword">

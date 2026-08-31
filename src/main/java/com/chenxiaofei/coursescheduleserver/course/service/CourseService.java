@@ -1,19 +1,19 @@
 package com.chenxiaofei.coursescheduleserver.course.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.course.dto.CoursePageRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
-import com.chenxiaofei.coursescheduleserver.salaryrule.entity.SalaryRule;
-import com.chenxiaofei.coursescheduleserver.student.entity.Student;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
-import com.chenxiaofei.coursescheduleserver.salaryrule.mapper.SalaryRuleMapper;
-import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import com.chenxiaofei.coursescheduleserver.student.entity.Student;
+import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -25,17 +25,26 @@ import java.util.List;
 public class CourseService {
 
     private final CourseMapper courseMapper;
-    private final SalaryRuleMapper salaryRuleMapper;
     private final StudentMapper studentMapper;
 
-    public CourseService(CourseMapper courseMapper, SalaryRuleMapper salaryRuleMapper, StudentMapper studentMapper) {
+    public CourseService(CourseMapper courseMapper, StudentMapper studentMapper) {
         this.courseMapper = courseMapper;
-        this.salaryRuleMapper = salaryRuleMapper;
         this.studentMapper = studentMapper;
     }
 
-    public List<Course> listInRange(LocalDateTime start, LocalDateTime end) {
-        return courseMapper.listInRange(UserContext.getUserId(), start, end);
+    public List<Course> listInRange(LocalDateTime start, LocalDateTime end, String title) {
+        return courseMapper.listInRange(UserContext.getUserId(), start, end, title);
+    }
+
+    /** 分页查询（title 模糊、时间范围可选），按 start_time 倒序 */
+    public PageResult<Course> page(CoursePageRequest req) {
+        Long userId = UserContext.getUserId();
+        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
+        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
+        long offset = (long) (pageNum - 1) * pageSize;
+        long total = courseMapper.countInRange(userId, req.getStart(), req.getEnd(), req.getTitle());
+        List<Course> list = courseMapper.pageInRange(userId, req.getStart(), req.getEnd(), req.getTitle(), offset, pageSize);
+        return PageResult.of(total, list);
     }
 
     public Course get(Long id) {
@@ -50,11 +59,11 @@ public class CourseService {
     public Course create(CourseRequest request) {
         validateTime(request.getStartTime(), request.getEndTime());
         checkConflict(request.getStartTime(), request.getEndTime(), null);
+        resolveStudent(request);
 
         Course c = new Course();
         c.setUserId(UserContext.getUserId());
         apply(c, request);
-        resolveFee(c);
         if (c.getStatus() == null) {
             c.setStatus("scheduled");
         }
@@ -72,13 +81,13 @@ public class CourseService {
         Course exist = get(id);
         validateTime(request.getStartTime(), request.getEndTime());
         checkConflict(request.getStartTime(), request.getEndTime(), id);
+        resolveStudent(request);
 
         Course c = new Course();
         c.setId(id);
         c.setUserId(UserContext.getUserId());
         apply(c, request);
         c.setStatus(request.getStatus() == null ? exist.getStatus() : request.getStatus());
-        resolveFee(c);
         courseMapper.update(c);
         return get(id);
     }
@@ -96,7 +105,7 @@ public class CourseService {
     private void deleteRepeatSeries(Long parentId) {
         Long userId = UserContext.getUserId();
         for (Course child : courseMapper.listInRange(userId, LocalDateTime.of(1900, 1, 1, 0, 0),
-                LocalDateTime.of(2100, 1, 1, 0, 0))) {
+                LocalDateTime.of(2100, 1, 1, 0, 0), null)) {
             if (parentId.equals(child.getParentId())) {
                 courseMapper.delete(child.getId(), userId);
             }
@@ -109,8 +118,10 @@ public class CourseService {
         CourseRequest req = new CourseRequest();
         req.setTitle(src.getTitle());
         req.setStudentId(src.getStudentId());
+        req.setStudentName(src.getStudentName());
         req.setOrganizationId(src.getOrganizationId());
         req.setSubject(src.getSubject());
+        req.setStage(src.getStage());
         req.setCourseType(src.getCourseType());
         req.setStartTime(newStart);
         req.setEndTime(newEnd);
@@ -133,25 +144,36 @@ public class CourseService {
         return get(id);
     }
 
-    /** 复制指定周（如：下周）的全部课程 */
+    /** 复制指定周（如：下周）的全部课程（跳过已结束课程，并做目标周冲突校验） */
     @Transactional
     public int copyWeekTo(int targetWeek) {
         Long userId = UserContext.getUserId();
         LocalDate today = LocalDate.now();
         LocalDate monday = today.with(DayOfWeek.MONDAY);
         LocalDate targetMonday = monday.plusWeeks(targetWeek);
+        long days = Duration.between(monday.atStartOfDay(), targetMonday.atStartOfDay()).toDays();
 
         List<Course> sources = courseMapper.listInRange(userId,
-                monday.atTime(LocalTime.MIN), monday.plusDays(7).atTime(LocalTime.MIN));
+                monday.atTime(LocalTime.MIN), monday.plusDays(7).atTime(LocalTime.MIN), null);
         int count = 0;
         for (Course src : sources) {
+            // 重复系列由模板/手动重复生成源，不参与整周复制，避免重复叠加
             if (src.getRepeatType() != null && !src.getRepeatType().isBlank()) {
                 continue;
             }
-            long days = Duration.between(monday.atStartOfDay(), targetMonday.atStartOfDay()).toDays();
+            // 已结束的课程不复刻到下周
+            if (src.getEndTime().isBefore(LocalDateTime.now())) {
+                continue;
+            }
+            LocalDateTime newStart = src.getStartTime().plusDays(days);
+            LocalDateTime newEnd = src.getEndTime().plusDays(days);
+            // 目标时段已有课则跳过，避免整周重叠
+            if (courseMapper.countConflict(userId, newStart, newEnd) > 0) {
+                continue;
+            }
             CourseRequest req = toRequest(src);
-            req.setStartTime(src.getStartTime().plusDays(days));
-            req.setEndTime(src.getEndTime().plusDays(days));
+            req.setStartTime(newStart);
+            req.setEndTime(newEnd);
             req.setFeeManual(true);
             courseMapper.insert(buildFrom(req, userId, src.getFee(), true));
             count++;
@@ -170,19 +192,26 @@ public class CourseService {
             switch (repeatType) {
                 case "daily" -> current = current.plusDays(1);
                 case "weekly" -> current = current.plusWeeks(1);
-                case "monthly" -> current = current.plusMonths(1);
                 default -> current = repeatEnd;
             }
             if (!current.isAfter(repeatEnd)) {
+                LocalDateTime nextStart = LocalDateTime.of(current, c.getStartTime().toLocalTime());
+                LocalDateTime nextEnd = LocalDateTime.of(current, c.getEndTime().toLocalTime());
+                // 逐节冲突校验：目标时段已有课则跳过该节，不整批失败
+                if (courseMapper.countConflict(c.getUserId(), nextStart, nextEnd) > 0) {
+                    continue;
+                }
                 Course next = new Course();
                 next.setUserId(c.getUserId());
                 next.setTitle(c.getTitle());
                 next.setStudentId(c.getStudentId());
+                next.setStudentName(c.getStudentName());
                 next.setOrganizationId(c.getOrganizationId());
                 next.setSubject(c.getSubject());
+                next.setStage(c.getStage());
                 next.setCourseType(c.getCourseType());
-                next.setStartTime(LocalDateTime.of(current, c.getStartTime().toLocalTime()));
-                next.setEndTime(LocalDateTime.of(current, c.getEndTime().toLocalTime()));
+                next.setStartTime(nextStart);
+                next.setEndTime(nextEnd);
                 next.setFee(c.getFee());
                 next.setFeeManual(c.getFeeManual());
                 next.setLocation(c.getLocation());
@@ -202,8 +231,10 @@ public class CourseService {
         CourseRequest req = new CourseRequest();
         req.setTitle(src.getTitle());
         req.setStudentId(src.getStudentId());
+        req.setStudentName(src.getStudentName());
         req.setOrganizationId(src.getOrganizationId());
         req.setSubject(src.getSubject());
+        req.setStage(src.getStage());
         req.setCourseType(src.getCourseType());
         req.setStartTime(src.getStartTime());
         req.setEndTime(src.getEndTime());
@@ -234,8 +265,10 @@ public class CourseService {
     private void apply(Course c, CourseRequest request) {
         c.setTitle(request.getTitle());
         c.setStudentId(request.getStudentId());
+        c.setStudentName(request.getStudentName());
         c.setOrganizationId(request.getOrganizationId());
         c.setSubject(request.getSubject());
+        c.setStage(request.getStage());
         c.setCourseType(request.getCourseType());
         c.setStartTime(request.getStartTime());
         c.setEndTime(request.getEndTime());
@@ -256,40 +289,53 @@ public class CourseService {
         }
     }
 
-    /** 未手动指定课时费时，按 收费规则(机构+年级+科目) 自动匹配 */
-    private void resolveFee(Course c) {
-        boolean manual = c.getFeeManual() != null && c.getFeeManual();
-        if (manual) {
-            return;
-        }
-        if (c.getFee() != null && c.getFee().compareTo(BigDecimal.ZERO) > 0) {
-            // 前端直接给了课时费就沿用（按小时折算的规则见下）
-            return;
-        }
-        Long orgId = c.getOrganizationId();
-        String subject = c.getSubject();
-        String grade = null;
-        if (c.getStudentId() != null) {
-            Student student = studentMapper.findById(c.getStudentId(), UserContext.getUserId());
-            if (student != null) {
-                grade = student.getGrade();
-            }
-        }
-        SalaryRule rule = salaryRuleMapper.match(UserContext.getUserId(), orgId, grade, subject);
-        if (rule == null || c.getStartTime() == null || c.getEndTime() == null) {
-            return;
-        }
-        BigDecimal hours = BigDecimal.valueOf(Duration.between(c.getStartTime(), c.getEndTime()).toMinutes())
-                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
-        c.setFee(rule.getHourlyFee().multiply(hours).setScale(2, RoundingMode.HALF_UP));
-    }
-
     private void validateTime(LocalDateTime start, LocalDateTime end) {
         if (start == null || end == null) {
             throw new BusinessException(400, "课程时间不能为空");
         }
         if (!end.isAfter(start)) {
             throw new BusinessException(400, "结束时间必须晚于开始时间");
+        }
+    }
+
+    /**
+     * 单独排课同步学生归属：按姓名查 student 表，存在则绑定 student_id（并补齐机构/科目/学段），
+     * 不存在则自动建档。无姓名时保持原样（student_id 可能为空）。
+     */
+    private void resolveStudent(CourseRequest request) {
+        Long userId = UserContext.getUserId();
+        if (StringUtils.hasText(request.getStudentName())) {
+            String name = request.getStudentName().trim();
+            Student existing = studentMapper.findByName(userId, name);
+            if (existing != null) {
+                request.setStudentId(existing.getId());
+                request.setStudentName(existing.getName());
+                boolean dirty = false;
+                if (request.getOrganizationId() != null && !request.getOrganizationId().equals(existing.getOrganizationId())) {
+                    existing.setOrganizationId(request.getOrganizationId());
+                    dirty = true;
+                }
+                if (StringUtils.hasText(request.getSubject()) && !request.getSubject().equals(existing.getSubject())) {
+                    existing.setSubject(request.getSubject());
+                    dirty = true;
+                }
+                if (StringUtils.hasText(request.getStage()) && !request.getStage().equals(existing.getGrade())) {
+                    existing.setGrade(request.getStage());
+                    dirty = true;
+                }
+                if (dirty) {
+                    studentMapper.update(existing);
+                }
+            } else {
+                Student s = new Student();
+                s.setUserId(userId);
+                s.setName(name);
+                s.setOrganizationId(request.getOrganizationId());
+                s.setSubject(request.getSubject());
+                s.setGrade(request.getStage());
+                studentMapper.insert(s);
+                request.setStudentId(s.getId());
+            }
         }
     }
 

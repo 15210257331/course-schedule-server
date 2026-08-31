@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper">
+
+    <sql id="courseWithNames">
+        SELECT c.*, COALESCE(c.student_name, s.name) AS studentName, o.name AS organization_name FROM course c
+        LEFT JOIN student s ON s.id = c.student_id
+        LEFT JOIN organization o ON o.id = c.organization_id
+    </sql>
+
+    <select id="listInRange" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        <include refid="courseWithNames"/>
+        WHERE c.user_id = #{userId} AND c.start_time &gt;= #{start} AND c.end_time &lt;= #{end}
+        <if test="title != null and title != ''">
+            AND c.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+        ORDER BY c.start_time
+    </select>
+
+    <sql id="courseRangeWhere">
+        WHERE c.user_id = #{userId}
+        <if test="start != null">AND c.start_time &gt;= #{start}</if>
+        <if test="end != null">AND c.start_time &lt; #{end}</if>
+        <if test="title != null and title != ''">
+            AND c.title LIKE CONCAT('%', #{title}, '%')
+        </if>
+    </sql>
+
+    <select id="countInRange" resultType="long">
+        SELECT COUNT(*) FROM course c
+        <include refid="courseRangeWhere"/>
+    </select>
+
+    <select id="pageInRange" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        <include refid="courseWithNames"/>
+        <include refid="courseRangeWhere"/>
+        ORDER BY c.start_time DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        <include refid="courseWithNames"/>
+        WHERE c.id = #{id} AND c.user_id = #{userId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO course(user_id, title, student_id, student_name, organization_id, subject, stage, course_type,
+        start_time, end_time, fee, fee_manual, location, note, status, color, reminder_offset_minutes,
+        repeat_type, repeat_end_date, parent_id)
+        VALUES(#{userId}, #{title}, #{studentId}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
+        #{startTime}, #{endTime}, #{fee}, #{feeManual}, #{location}, #{note}, #{status}, #{color},
+        #{reminderOffsetMinutes}, #{repeatType}, #{repeatEndDate}, #{parentId})
+    </insert>
+
+    <update id="update">
+        UPDATE course SET title = #{title}, student_id = #{studentId}, student_name = #{studentName}, organization_id = #{organizationId},
+        subject = #{subject}, stage = #{stage}, course_type = #{courseType}, start_time = #{startTime}, end_time = #{endTime},
+        fee = #{fee}, fee_manual = #{feeManual}, location = #{location}, note = #{note}, status = #{status},
+        color = #{color}, reminder_offset_minutes = #{reminderOffsetMinutes}
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <update id="updateTime">
+        UPDATE course SET start_time = #{startTime}, end_time = #{endTime}
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM course WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <select id="countConflict" resultType="int">
+        SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND status = 'scheduled'
+        AND start_time &lt; #{end} AND end_time &gt; #{start}
+    </select>
+
+    <select id="countConflictExclude" resultType="int">
+        SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND status = 'scheduled'
+        AND start_time &lt; #{end} AND end_time &gt; #{start} AND id != #{excludeId}
+    </select>
+
+    <select id="countByParent" resultType="int">
+        SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND parent_id = #{parentId}
+    </select>
+
+    <select id="countByStudent" resultType="long">
+        SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND student_id = #{studentId}
+    </select>
+
+    <select id="countByOrganization" resultType="long">
+        SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND organization_id = #{organizationId}
+    </select>
+
+    <select id="listExpiredScheduled" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        SELECT * FROM course WHERE status = 'scheduled' AND end_time &lt; #{now}
+        <if test="userIds != null and userIds.size() > 0">
+            AND user_id IN
+            <foreach collection="userIds" item="uid" open="(" separator="," close=")">#{uid}</foreach>
+        </if>
+    </select>
+
+    <update id="batchUpdateStatus">
+        UPDATE course SET status = #{status} WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </update>
+
+    <select id="listDueReminder" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        SELECT c.* FROM course c
+        LEFT JOIN setting st ON st.user_id = c.user_id AND st.setting_key = 'reminderOffset'
+        WHERE c.status = 'scheduled' AND c.start_time &gt;= #{now}
+        AND c.start_time &lt;= DATE_ADD(#{now}, INTERVAL COALESCE(CAST(st.setting_value AS SIGNED), c.reminder_offset_minutes, 30) MINUTE)
+        <if test="userIds != null and userIds.size() > 0">
+            AND c.user_id IN
+            <foreach collection="userIds" item="uid" open="(" separator="," close=")">#{uid}</foreach>
+        </if>
+    </select>
+
+</mapper>

@@ -18,6 +18,11 @@
         WHERE s.id = #{id} AND s.user_id = #{userId}
     </select>
 
+    <select id="findByName" resultType="com.chenxiaofei.coursescheduleserver.student.entity.Student">
+        <include refid="studentWithOrg"/>
+        WHERE s.user_id = #{userId} AND s.name = #{name} LIMIT 1
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO student(user_id, name, gender, grade, subject, organization_id, phone, parent_phone, fee, remark)
         VALUES(#{userId}, #{name}, #{gender}, #{grade}, #{subject}, #{organizationId}, #{phone}, #{parentPhone}, #{fee}, #{remark})

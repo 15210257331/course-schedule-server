@@ -1,6 +1,9 @@
 package com.chenxiaofei.coursescheduleserver.organization.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
+import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationPageRequest;
 import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationRequest;
 import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
 import com.chenxiaofei.coursescheduleserver.organization.mapper.OrganizationMapper;
@@ -13,13 +16,30 @@ import java.util.List;
 public class OrganizationService {
 
     private final OrganizationMapper mapper;
+    private final CourseMapper courseMapper;
 
-    public OrganizationService(OrganizationMapper mapper) {
+    public OrganizationService(OrganizationMapper mapper, CourseMapper courseMapper) {
         this.mapper = mapper;
+        this.courseMapper = courseMapper;
     }
 
     public List<Organization> list() {
-        return mapper.listByUser(UserContext.getUserId());
+        return list(null);
+    }
+
+    public List<Organization> list(String name) {
+        return mapper.listByUser(UserContext.getUserId(), name);
+    }
+
+    /** 分页查询（name 模糊），按 id 倒序 */
+    public PageResult<Organization> page(OrganizationPageRequest req) {
+        Long userId = UserContext.getUserId();
+        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
+        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
+        long offset = (long) (pageNum - 1) * pageSize;
+        long total = mapper.countByUser(userId, req.getName());
+        List<Organization> list = mapper.pageByUser(userId, req.getName(), offset, pageSize);
+        return PageResult.of(total, list);
     }
 
     public Organization get(Long id) {
@@ -50,7 +70,12 @@ public class OrganizationService {
 
     public void delete(Long id) {
         get(id);
-        mapper.delete(id, UserContext.getUserId());
+        Long userId = UserContext.getUserId();
+        // 存在关联课程时禁止删除，避免课程机构悬空
+        if (courseMapper.countByOrganization(userId, id) > 0) {
+            throw new BusinessException(400, "该机构下还有课程，无法删除");
+        }
+        mapper.delete(id, userId);
     }
 
     private void apply(Organization org, OrganizationRequest request) {
@@ -59,6 +84,7 @@ public class OrganizationService {
         org.setContactPhone(request.getContactPhone());
         org.setAddress(request.getAddress());
         org.setDefaultFee(request.getDefaultFee());
+        org.setColor(request.getColor());
         org.setRemark(request.getRemark());
     }
 }

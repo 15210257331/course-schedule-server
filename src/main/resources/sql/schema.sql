@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS organization (
     contact_phone VARCHAR(20),
     address       VARCHAR(255),
     default_fee   DECIMAL(10, 2),
+    color         VARCHAR(20),
     remark        VARCHAR(500),
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -51,8 +52,10 @@ CREATE TABLE IF NOT EXISTS course (
     user_id                  BIGINT       NOT NULL,
     title                    VARCHAR(100) NOT NULL,
     student_id               BIGINT,
+    student_name             VARCHAR(50),
     organization_id          BIGINT,
     subject                  VARCHAR(50),
+    stage                    VARCHAR(20),
     course_type              VARCHAR(50),
     start_time               DATETIME     NOT NULL,
     end_time                 DATETIME     NOT NULL,
@@ -72,18 +75,30 @@ CREATE TABLE IF NOT EXISTS course (
     INDEX idx_course_start (user_id, start_time)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-CREATE TABLE IF NOT EXISTS salary_rule (
-    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id         BIGINT       NOT NULL,
-    organization_id BIGINT,
-    grade           VARCHAR(20),
-    subject         VARCHAR(50),
-    hourly_fee      DECIMAL(10, 2) NOT NULL,
-    remark          VARCHAR(200),
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_rule_user (user_id)
+CREATE TABLE IF NOT EXISTS course_template (
+    id                BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id           BIGINT       NOT NULL,
+    title             VARCHAR(100) NOT NULL,
+    student_id        BIGINT,
+    student_name      VARCHAR(50),
+    organization_id   BIGINT,
+    subject           VARCHAR(50),
+    stage             VARCHAR(20),
+    course_type       VARCHAR(50),
+    duration_minutes  INT          NOT NULL DEFAULT 60,
+    fee               DECIMAL(10, 2),
+    fee_manual        TINYINT DEFAULT 0,
+    location          VARCHAR(200),
+    note              VARCHAR(800),
+    color             VARCHAR(20) DEFAULT '#635bff',
+    repeat_type       VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则：daily/weekly，NULL 不重复',
+    created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_tpl_user (user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- 2026-08-30 增补：模板重复规则（已建表环境执行）
+-- ALTER TABLE course_template ADD COLUMN repeat_type VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则' AFTER color;
 
 CREATE TABLE IF NOT EXISTS notification (
     id         BIGINT AUTO_INCREMENT PRIMARY KEY,

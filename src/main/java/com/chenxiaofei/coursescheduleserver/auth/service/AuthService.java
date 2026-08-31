@@ -63,6 +63,7 @@ public class AuthService {
         user.setAvatar(request.getAvatar());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
+        user.setSubjects(request.getSubjects());
         userMapper.updateProfile(user);
         return profile(userId);
     }
@@ -83,6 +84,7 @@ public class AuthService {
         resp.setNickname(user.getNickname());
         resp.setAvatar(user.getAvatar());
         resp.setRole(user.getRole());
+        resp.setSubjects(user.getSubjects());
         return resp;
     }
 }

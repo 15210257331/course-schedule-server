@@ -1,11 +1,11 @@
-package com.chenxiaofei.coursescheduleserver.organization.controller;
+package com.chenxiaofei.coursescheduleserver.coursetemplate.controller;
 
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
-import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationPageRequest;
-import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationRequest;
-import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
-import com.chenxiaofei.coursescheduleserver.organization.service.OrganizationService;
+import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplatePageRequest;
+import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplateRequest;
+import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate;
+import com.chenxiaofei.coursescheduleserver.coursetemplate.service.CourseTemplateService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,38 +20,38 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/organizations")
-public class OrganizationController {
+@RequestMapping("/api/course-templates")
+public class CourseTemplateController {
 
-    private final OrganizationService service;
+    private final CourseTemplateService service;
 
-    public OrganizationController(OrganizationService service) {
+    public CourseTemplateController(CourseTemplateService service) {
         this.service = service;
     }
 
     @GetMapping
-    public Result<List<Organization>> list(@RequestParam(required = false) String name) {
+    public Result<List<CourseTemplate>> list(@RequestParam(required = false) String name) {
         String kw = (name == null || name.isBlank()) ? null : name.trim();
         return Result.ok(service.list(kw));
     }
 
     @PostMapping("/page")
-    public Result<PageResult<Organization>> page(@RequestBody OrganizationPageRequest request) {
+    public Result<PageResult<CourseTemplate>> page(@RequestBody CourseTemplatePageRequest request) {
         return Result.ok(service.page(request));
     }
 
     @GetMapping("/{id}")
-    public Result<Organization> get(@PathVariable Long id) {
+    public Result<CourseTemplate> get(@PathVariable Long id) {
         return Result.ok(service.get(id));
     }
 
     @PostMapping
-    public Result<Organization> create(@Valid @RequestBody OrganizationRequest request) {
+    public Result<CourseTemplate> create(@Valid @RequestBody CourseTemplateRequest request) {
         return Result.ok(service.create(request));
     }
 
     @PutMapping("/{id}")
-    public Result<Organization> update(@PathVariable Long id, @Valid @RequestBody OrganizationRequest request) {
+    public Result<CourseTemplate> update(@PathVariable Long id, @Valid @RequestBody CourseTemplateRequest request) {
         return Result.ok(service.update(id, request));
     }
 

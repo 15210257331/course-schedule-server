@@ -15,5 +15,6 @@ public class OrganizationRequest {
     private String contactPhone;
     private String address;
     private BigDecimal defaultFee;
+    private String color;
     private String remark;
 }

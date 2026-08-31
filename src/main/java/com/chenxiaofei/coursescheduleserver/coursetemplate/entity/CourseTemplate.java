@@ -1,13 +1,12 @@
-package com.chenxiaofei.coursescheduleserver.course.entity;
+package com.chenxiaofei.coursescheduleserver.coursetemplate.entity;
 
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-public class Course {
+public class CourseTemplate {
 
     private Long id;
     private Long userId;
@@ -16,24 +15,20 @@ public class Course {
     private String studentName;
     private Long organizationId;
     private String subject;
-    /** 学段（初一/初二/初三/高一/高二/高三），冗余自课程模板 */
+    /** 学段（初一/初二/初三/高一/高二/高三） */
     private String stage;
     private String courseType;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private Integer durationMinutes;
     private BigDecimal fee;
     private Boolean feeManual;
     private String location;
     private String note;
-    private String status;
     private String color;
-    private Integer reminderOffsetMinutes;
+    /** 拖入日历时的重复规则：daily/weekly，NULL 不重复（daily 排到本月底，weekly 排到本月末） */
     private String repeatType;
-    private LocalDate repeatEndDate;
-    private Long parentId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    /** 联表冗余：机构名（学生名走存储列 studentName，见上） */
+    /** 联表冗余字段 */
     private String organizationName;
 }

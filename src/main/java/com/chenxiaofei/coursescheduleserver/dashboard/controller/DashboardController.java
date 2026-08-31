@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,12 @@ public class DashboardController {
     }
 
     @GetMapping("/income-report")
-    public Result<Map<String, Object>> incomeReport(@RequestParam(defaultValue = "30") int days) {
+    public Result<Map<String, Object>> incomeReport(@RequestParam(defaultValue = "30") int days,
+                                                    @RequestParam(required = false) String start,
+                                                    @RequestParam(required = false) String end) {
+        if (start != null && !start.isBlank() && end != null && !end.isBlank()) {
+            return Result.ok(dashboardService.incomeReport(LocalDate.parse(start), LocalDate.parse(end)));
+        }
         return Result.ok(dashboardService.incomeReport(days));
     }
 }

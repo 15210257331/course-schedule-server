@@ -11,7 +11,14 @@ import java.util.List;
 public interface CourseMapper {
 
     List<Course> listInRange(@Param("userId") Long userId, @Param("start") LocalDateTime start,
-                             @Param("end") LocalDateTime end);
+                             @Param("end") LocalDateTime end, @Param("title") String title);
+
+    long countInRange(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                      @Param("end") LocalDateTime end, @Param("title") String title);
+
+    List<Course> pageInRange(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                             @Param("end") LocalDateTime end, @Param("title") String title,
+                             @Param("offset") long offset, @Param("limit") int limit);
 
     Course findById(@Param("id") Long id, @Param("userId") Long userId);
 
@@ -31,4 +38,19 @@ public interface CourseMapper {
                              @Param("end") LocalDateTime end, @Param("excludeId") Long excludeId);
 
     int countByParent(@Param("userId") Long userId, @Param("parentId") Long parentId);
+
+    /** 按学生统计课程数（删除保护用） */
+    long countByStudent(@Param("userId") Long userId, @Param("studentId") Long studentId);
+
+    /** 按机构统计课程数（删除保护用） */
+    long countByOrganization(@Param("userId") Long userId, @Param("organizationId") Long organizationId);
+
+    /** 到期未结的 scheduled 课程（end_time < now），用于按时间自动结算为 completed */
+    List<Course> listExpiredScheduled(@Param("userIds") List<Long> userIds, @Param("now") LocalDateTime now);
+
+    /** 到点未提醒的 scheduled 课程（now 已到达 start_time - 提醒偏移），用于生成提醒 */
+    List<Course> listDueReminder(@Param("userIds") List<Long> userIds, @Param("now") LocalDateTime now);
+
+    /** 批量更新课程状态 */
+    int batchUpdateStatus(@Param("ids") List<Long> ids, @Param("status") String status);
 }
