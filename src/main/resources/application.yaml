@@ -5,6 +5,10 @@ spring:
     active: dev
   jackson:
     time-zone: Asia/Shanghai
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 2MB
 
 server:
   port: 8080
@@ -17,3 +21,12 @@ mybatis:
 jwt:
   secret: teacheros-course-schedule-secret-key-please-change-in-production-2026
   expire-seconds: 604800
+
+# 邮件（重置密码验证码）：enabled=false 时验证码打印到日志（开发模式）
+mail:
+  enabled: false
+  from: "TeacherOS <no-reply@teacheros.local>"
+
+# 上传目录
+app:
+  upload-dir: ./uploads

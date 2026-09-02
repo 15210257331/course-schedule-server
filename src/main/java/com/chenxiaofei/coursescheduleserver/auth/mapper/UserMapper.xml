@@ -11,6 +11,10 @@
         SELECT * FROM `user` WHERE username = #{username}
     </select>
 
+    <select id="findByEmail" resultType="com.chenxiaofei.coursescheduleserver.auth.entity.User">
+        SELECT * FROM `user` WHERE email = #{email} LIMIT 1
+    </select>
+
     <select id="listAllIds" resultType="long">
         SELECT id FROM `user`
     </select>

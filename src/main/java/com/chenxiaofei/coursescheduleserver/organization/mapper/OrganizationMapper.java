@@ -18,9 +18,13 @@ public interface OrganizationMapper {
 
     Organization findById(@Param("id") Long id, @Param("userId") Long userId);
 
+    List<Organization> listAllByUser(@Param("userId") Long userId);
+
     int insert(Organization org);
 
     int update(Organization org);
 
     int delete(@Param("id") Long id, @Param("userId") Long userId);
+
+    int deleteAllByUser(@Param("userId") Long userId);
 }

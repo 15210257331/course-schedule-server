@@ -13,6 +13,8 @@ public interface UserMapper {
 
     User findByUsername(@Param("username") String username);
 
+    User findByEmail(@Param("email") String email);
+
     List<Long> listAllIds();
 
     int insert(User user);

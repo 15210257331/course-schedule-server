@@ -14,4 +14,6 @@ public interface SettingMapper {
     Setting get(@Param("userId") Long userId, @Param("key") String key);
 
     int upsert(@Param("userId") Long userId, @Param("key") String key, @Param("value") String value);
+
+    int deleteAllByUser(@Param("userId") Long userId);
 }

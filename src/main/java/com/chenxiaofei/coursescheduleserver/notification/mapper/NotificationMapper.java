@@ -14,7 +14,12 @@ public interface NotificationMapper {
 
     List<Notification> listRecent(@Param("userId") Long userId, @Param("limit") int limit);
 
+    List<Notification> listAllByUser(@Param("userId") Long userId);
+
     int insert(Notification n);
+
+    /** 备份导入：完整行插入（含 is_read） */
+    int insertFull(Notification n);
 
     /** 某课程是否已生成过提醒（去重用） */
     int countByCourse(@Param("userId") Long userId, @Param("courseId") Long courseId);
@@ -24,4 +29,6 @@ public interface NotificationMapper {
     int markAllRead(@Param("userId") Long userId);
 
     int delete(@Param("id") Long id, @Param("userId") Long userId);
+
+    int deleteAllByUser(@Param("userId") Long userId);
 }

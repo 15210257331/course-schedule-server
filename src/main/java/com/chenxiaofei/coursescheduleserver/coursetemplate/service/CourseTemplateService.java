@@ -9,8 +9,6 @@ import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplateReq
 import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.mapper.CourseTemplateMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
-import com.chenxiaofei.coursescheduleserver.student.entity.Student;
-import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,12 +19,10 @@ import java.util.List;
 public class CourseTemplateService {
 
     private final CourseTemplateMapper mapper;
-    private final StudentMapper studentMapper;
     private final UserMapper userMapper;
 
-    public CourseTemplateService(CourseTemplateMapper mapper, StudentMapper studentMapper, UserMapper userMapper) {
+    public CourseTemplateService(CourseTemplateMapper mapper, UserMapper userMapper) {
         this.mapper = mapper;
-        this.studentMapper = studentMapper;
         this.userMapper = userMapper;
     }
 
@@ -62,8 +58,7 @@ public class CourseTemplateService {
         t.setUserId(UserContext.getUserId());
         apply(t, request);
         checkSubjectAllowed(t.getSubject());
-        resolveStudent(t);
-        checkStudentUnique(t.getStudentId(), null);
+        checkStudentUnique(t.getStudentName(), null);
         mapper.insert(t);
         return get(t.getId());
     }
@@ -75,8 +70,7 @@ public class CourseTemplateService {
         t.setUserId(UserContext.getUserId());
         apply(t, request);
         checkSubjectAllowed(t.getSubject());
-        resolveStudent(t);
-        checkStudentUnique(t.getStudentId(), id);
+        checkStudentUnique(t.getStudentName(), id);
         mapper.update(t);
         return get(id);
     }
@@ -104,66 +98,13 @@ public class CourseTemplateService {
     }
 
     /**
-     * 学生字段为输入框：按姓名查 student 表，存在则绑定 student_id 并同步机构/科目；
-     * 不存在则自动建档。无姓名时按原样存 student_id（可能为 null）。
+     * 一个学生只能有一个课程模板（模板即学生，按学生姓名唯一）
      */
-    private void resolveStudent(CourseTemplate t) {
-        Long userId = UserContext.getUserId();
-        if (StringUtils.hasText(t.getStudentName())) {
-            String name = t.getStudentName().trim();
-            Student existing = studentMapper.findByName(userId, name);
-            if (existing != null) {
-                t.setStudentId(existing.getId());
-                t.setStudentName(existing.getName());
-                syncStudent(existing, t);
-            } else {
-                Student s = new Student();
-                s.setUserId(userId);
-                s.setName(name);
-                s.setOrganizationId(t.getOrganizationId());
-                s.setSubject(t.getSubject());
-                s.setGrade(t.getStage());
-                s.setFee(t.getFee());
-                studentMapper.insert(s);
-                t.setStudentId(s.getId());
-            }
+    private void checkStudentUnique(String studentName, Long excludeId) {
+        if (!StringUtils.hasText(studentName)) {
             return;
         }
-        if (t.getStudentId() != null) {
-            Student s = studentMapper.findById(t.getStudentId(), userId);
-            if (s != null) {
-                t.setStudentName(s.getName());
-            }
-        }
-    }
-
-    /** 模板里的机构/科目/学段同步回学生档案（仅当模板提供了对应值且与档案不同时） */
-    private void syncStudent(Student s, CourseTemplate t) {
-        boolean dirty = false;
-        if (t.getOrganizationId() != null && !t.getOrganizationId().equals(s.getOrganizationId())) {
-            s.setOrganizationId(t.getOrganizationId());
-            dirty = true;
-        }
-        if (StringUtils.hasText(t.getSubject()) && !t.getSubject().equals(s.getSubject())) {
-            s.setSubject(t.getSubject());
-            dirty = true;
-        }
-        // 模板学段（初一~高三）同步为学员档案 grade
-        if (StringUtils.hasText(t.getStage()) && !t.getStage().equals(s.getGrade())) {
-            s.setGrade(t.getStage());
-            dirty = true;
-        }
-        if (dirty) {
-            studentMapper.update(s);
-        }
-    }
-
-    /** 一个学生只能有一个课程模板 */
-    private void checkStudentUnique(Long studentId, Long excludeId) {
-        if (studentId == null) {
-            return;
-        }
-        int count = mapper.countByStudent(UserContext.getUserId(), studentId, excludeId);
+        int count = mapper.countByStudentName(UserContext.getUserId(), studentName.trim(), excludeId);
         if (count > 0) {
             throw new BusinessException(400, "该学生已有课程模板，一个学生只能有一个模板");
         }

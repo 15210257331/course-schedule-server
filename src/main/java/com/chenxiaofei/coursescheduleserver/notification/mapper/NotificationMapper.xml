@@ -12,9 +12,18 @@
         SELECT * FROM notification WHERE user_id = #{userId} ORDER BY id DESC LIMIT #{limit}
     </select>
 
+    <select id="listAllByUser" resultType="com.chenxiaofei.coursescheduleserver.notification.entity.Notification">
+        SELECT * FROM notification WHERE user_id = #{userId} ORDER BY id ASC
+    </select>
+
     <insert id="insert">
         INSERT INTO notification(user_id, type, title, content, course_id, remind_at)
         VALUES(#{userId}, #{type}, #{title}, #{content}, #{courseId}, #{remindAt})
+    </insert>
+
+    <insert id="insertFull">
+        INSERT INTO notification(user_id, type, title, content, course_id, remind_at, is_read)
+        VALUES(#{userId}, #{type}, #{title}, #{content}, #{courseId}, #{remindAt}, #{isRead})
     </insert>
 
     <select id="countByCourse" resultType="int">
@@ -31,6 +40,10 @@
 
     <delete id="delete">
         DELETE FROM notification WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteAllByUser">
+        DELETE FROM notification WHERE user_id = #{userId}
     </delete>
 
 </mapper>

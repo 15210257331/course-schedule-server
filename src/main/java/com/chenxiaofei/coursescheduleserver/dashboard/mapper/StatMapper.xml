@@ -32,10 +32,9 @@
     </select>
 
     <select id="incomeByStudent" resultType="map">
-        SELECT COALESCE(s.name, c.student_name) AS name, IFNULL(SUM(c.fee), 0) AS value FROM course c
-        LEFT JOIN student s ON s.id = c.student_id
+        SELECT c.student_name AS name, IFNULL(SUM(c.fee), 0) AS value FROM course c
         WHERE c.user_id = #{userId} AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
-        GROUP BY c.student_id, c.student_name, s.name ORDER BY value DESC
+        GROUP BY c.student_name ORDER BY value DESC
     </select>
 
     <select id="incomeByStage" resultType="map">
@@ -45,25 +44,23 @@
     </select>
 
     <select id="feeDetailByStudent" resultType="map">
-        SELECT COALESCE(s.name, c.student_name) AS name,
+        SELECT c.student_name AS name,
                IFNULL(o.name, '') AS organizationName,
                COUNT(*) AS courseCount,
                IFNULL(SUM(c.fee), 0) AS fee
         FROM course c
-        LEFT JOIN student s ON s.id = c.student_id
-        LEFT JOIN organization o ON o.id = s.organization_id
+        LEFT JOIN organization o ON o.id = c.organization_id
         WHERE c.user_id = #{userId} AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
-        GROUP BY COALESCE(s.name, c.student_name), o.name ORDER BY fee DESC
+        GROUP BY c.student_name, o.name ORDER BY fee DESC
     </select>
 
     <select id="feeDetailByOrganization" resultType="map">
         SELECT IFNULL(o.name, '未分类') AS name,
-               GROUP_CONCAT(DISTINCT COALESCE(s.name, c.student_name) SEPARATOR '·') AS studentNames,
+               GROUP_CONCAT(DISTINCT c.student_name SEPARATOR '·') AS studentNames,
                COUNT(*) AS courseCount,
                IFNULL(SUM(c.fee), 0) AS fee
         FROM course c
         LEFT JOIN organization o ON o.id = c.organization_id
-        LEFT JOIN student s ON s.id = c.student_id
         WHERE c.user_id = #{userId} AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
         GROUP BY o.id, o.name ORDER BY fee DESC
     </select>

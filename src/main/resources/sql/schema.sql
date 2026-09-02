@@ -30,23 +30,6 @@ CREATE TABLE IF NOT EXISTS organization (
     INDEX idx_org_user (user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-CREATE TABLE IF NOT EXISTS student (
-    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id         BIGINT      NOT NULL,
-    name            VARCHAR(50) NOT NULL,
-    gender          VARCHAR(10),
-    grade           VARCHAR(20),
-    subject         VARCHAR(50),
-    organization_id BIGINT,
-    phone           VARCHAR(20),
-    parent_phone    VARCHAR(20),
-    fee             DECIMAL(10, 2),
-    remark          VARCHAR(500),
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_stu_user (user_id)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
 CREATE TABLE IF NOT EXISTS course (
     id                       BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id                  BIGINT       NOT NULL,
@@ -91,7 +74,7 @@ CREATE TABLE IF NOT EXISTS course_template (
     location          VARCHAR(200),
     note              VARCHAR(800),
     color             VARCHAR(20) DEFAULT '#635bff',
-    repeat_type       VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则：daily/weekly，NULL 不重复',
+    repeat_type       VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则：daily/weekly/biweekly，NULL 不重复',
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_tpl_user (user_id)

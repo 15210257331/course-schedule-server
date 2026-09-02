@@ -5,6 +5,8 @@ import com.chenxiaofei.coursescheduleserver.auth.dto.LoginRequest;
 import com.chenxiaofei.coursescheduleserver.auth.dto.LoginResponse;
 import com.chenxiaofei.coursescheduleserver.auth.dto.PasswordUpdateRequest;
 import com.chenxiaofei.coursescheduleserver.auth.dto.RegisterRequest;
+import com.chenxiaofei.coursescheduleserver.auth.dto.ResetCodeRequest;
+import com.chenxiaofei.coursescheduleserver.auth.dto.ResetPasswordRequest;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
 import com.chenxiaofei.coursescheduleserver.auth.service.AuthService;
@@ -49,6 +51,18 @@ public class AuthController {
     @PutMapping("/password")
     public Result<Void> updatePassword(@Valid @RequestBody PasswordUpdateRequest request) {
         authService.updatePassword(UserContext.getUserId(), request);
+        return Result.ok();
+    }
+
+    @PostMapping("/reset-code")
+    public Result<Void> sendResetCode(@Valid @RequestBody ResetCodeRequest request) {
+        authService.sendResetCode(request);
+        return Result.ok();
+    }
+
+    @PostMapping("/reset-password")
+    public Result<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
         return Result.ok();
     }
 }

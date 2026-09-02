@@ -5,8 +5,11 @@ import com.chenxiaofei.coursescheduleserver.auth.dto.LoginRequest;
 import com.chenxiaofei.coursescheduleserver.auth.dto.LoginResponse;
 import com.chenxiaofei.coursescheduleserver.auth.dto.PasswordUpdateRequest;
 import com.chenxiaofei.coursescheduleserver.auth.dto.RegisterRequest;
+import com.chenxiaofei.coursescheduleserver.auth.dto.ResetCodeRequest;
+import com.chenxiaofei.coursescheduleserver.auth.dto.ResetPasswordRequest;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
+import com.chenxiaofei.coursescheduleserver.mail.MailService;
 import com.chenxiaofei.coursescheduleserver.security.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
@@ -16,10 +19,14 @@ public class AuthService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
+    private final CaptchaStore captchaStore;
+    private final MailService mailService;
 
-    public AuthService(UserMapper userMapper, JwtUtil jwtUtil) {
+    public AuthService(UserMapper userMapper, JwtUtil jwtUtil, CaptchaStore captchaStore, MailService mailService) {
         this.userMapper = userMapper;
         this.jwtUtil = jwtUtil;
+        this.captchaStore = captchaStore;
+        this.mailService = mailService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -34,6 +41,9 @@ public class AuthService {
         User existing = userMapper.findByUsername(request.getUsername());
         if (existing != null) {
             throw new BusinessException("用户名已存在");
+        }
+        if (userMapper.findByEmail(request.getEmail().trim()) != null) {
+            throw new BusinessException("该邮箱已被注册");
         }
         User user = new User();
         user.setUsername(request.getUsername());
@@ -74,6 +84,28 @@ public class AuthService {
             throw new BusinessException("原密码错误");
         }
         userMapper.updatePassword(userId, BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
+    }
+
+    /** 发送密码重置验证码（按邮箱定位用户） */
+    public void sendResetCode(ResetCodeRequest request) {
+        String email = request.getEmail().trim();
+        User user = userMapper.findByEmail(email);
+        if (user == null) {
+            throw new BusinessException(404, "该邮箱未注册");
+        }
+        String code = captchaStore.issue(email);
+        mailService.sendResetCode(email, code);
+    }
+
+    /** 校验验证码并重置密码 */
+    public void resetPassword(ResetPasswordRequest request) {
+        String email = request.getEmail().trim();
+        captchaStore.verify(email, request.getCode());
+        User user = userMapper.findByEmail(email);
+        if (user == null) {
+            throw new BusinessException(404, "该邮箱未注册");
+        }
+        userMapper.updatePassword(user.getId(), BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
     }
 
     private LoginResponse buildResponse(User user) {

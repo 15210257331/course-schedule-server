@@ -7,11 +7,8 @@ import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
-import com.chenxiaofei.coursescheduleserver.student.entity.Student;
-import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
@@ -25,11 +22,9 @@ import java.util.List;
 public class CourseService {
 
     private final CourseMapper courseMapper;
-    private final StudentMapper studentMapper;
 
-    public CourseService(CourseMapper courseMapper, StudentMapper studentMapper) {
+    public CourseService(CourseMapper courseMapper) {
         this.courseMapper = courseMapper;
-        this.studentMapper = studentMapper;
     }
 
     public List<Course> listInRange(LocalDateTime start, LocalDateTime end, String title) {
@@ -59,7 +54,6 @@ public class CourseService {
     public Course create(CourseRequest request) {
         validateTime(request.getStartTime(), request.getEndTime());
         checkConflict(request.getStartTime(), request.getEndTime(), null);
-        resolveStudent(request);
 
         Course c = new Course();
         c.setUserId(UserContext.getUserId());
@@ -81,7 +75,6 @@ public class CourseService {
         Course exist = get(id);
         validateTime(request.getStartTime(), request.getEndTime());
         checkConflict(request.getStartTime(), request.getEndTime(), id);
-        resolveStudent(request);
 
         Course c = new Course();
         c.setId(id);
@@ -192,6 +185,7 @@ public class CourseService {
             switch (repeatType) {
                 case "daily" -> current = current.plusDays(1);
                 case "weekly" -> current = current.plusWeeks(1);
+                case "biweekly" -> current = current.plusWeeks(2);
                 default -> current = repeatEnd;
             }
             if (!current.isAfter(repeatEnd)) {
@@ -295,47 +289,6 @@ public class CourseService {
         }
         if (!end.isAfter(start)) {
             throw new BusinessException(400, "结束时间必须晚于开始时间");
-        }
-    }
-
-    /**
-     * 单独排课同步学生归属：按姓名查 student 表，存在则绑定 student_id（并补齐机构/科目/学段），
-     * 不存在则自动建档。无姓名时保持原样（student_id 可能为空）。
-     */
-    private void resolveStudent(CourseRequest request) {
-        Long userId = UserContext.getUserId();
-        if (StringUtils.hasText(request.getStudentName())) {
-            String name = request.getStudentName().trim();
-            Student existing = studentMapper.findByName(userId, name);
-            if (existing != null) {
-                request.setStudentId(existing.getId());
-                request.setStudentName(existing.getName());
-                boolean dirty = false;
-                if (request.getOrganizationId() != null && !request.getOrganizationId().equals(existing.getOrganizationId())) {
-                    existing.setOrganizationId(request.getOrganizationId());
-                    dirty = true;
-                }
-                if (StringUtils.hasText(request.getSubject()) && !request.getSubject().equals(existing.getSubject())) {
-                    existing.setSubject(request.getSubject());
-                    dirty = true;
-                }
-                if (StringUtils.hasText(request.getStage()) && !request.getStage().equals(existing.getGrade())) {
-                    existing.setGrade(request.getStage());
-                    dirty = true;
-                }
-                if (dirty) {
-                    studentMapper.update(existing);
-                }
-            } else {
-                Student s = new Student();
-                s.setUserId(userId);
-                s.setName(name);
-                s.setOrganizationId(request.getOrganizationId());
-                s.setSubject(request.getSubject());
-                s.setGrade(request.getStage());
-                studentMapper.insert(s);
-                request.setStudentId(s.getId());
-            }
         }
     }
 

@@ -4,9 +4,8 @@
 <mapper namespace="com.chenxiaofei.coursescheduleserver.coursetemplate.mapper.CourseTemplateMapper">
 
     <sql id="templateWithNames">
-        SELECT t.*, COALESCE(t.student_name, s.name) AS student_name, o.name AS organization_name
+        SELECT t.*, t.student_name AS student_name, o.name AS organization_name
         FROM course_template t
-        LEFT JOIN student s ON s.id = t.student_id
         LEFT JOIN organization o ON o.id = t.organization_id
     </sql>
 
@@ -14,7 +13,7 @@
         <include refid="templateWithNames"/>
         WHERE t.user_id = #{userId}
         <if test="name != null and name != ''">
-            AND (t.student_name LIKE CONCAT('%', #{name}, '%') OR s.name LIKE CONCAT('%', #{name}, '%'))
+            AND t.student_name LIKE CONCAT('%', #{name}, '%')
         </if>
         ORDER BY t.id DESC
     </select>
@@ -22,13 +21,12 @@
     <sql id="tplPageWhere">
         WHERE t.user_id = #{userId}
         <if test="name != null and name != ''">
-            AND (t.student_name LIKE CONCAT('%', #{name}, '%') OR s.name LIKE CONCAT('%', #{name}, '%'))
+            AND t.student_name LIKE CONCAT('%', #{name}, '%')
         </if>
     </sql>
 
     <select id="countByUser" resultType="long">
         SELECT COUNT(*) FROM course_template t
-        LEFT JOIN student s ON s.id = t.student_id
         <include refid="tplPageWhere"/>
     </select>
 
@@ -44,9 +42,13 @@
         WHERE t.id = #{id} AND t.user_id = #{userId}
     </select>
 
-    <select id="countByStudent" resultType="int">
+    <select id="listAllByUser" resultType="com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate">
+        SELECT * FROM course_template WHERE user_id = #{userId} ORDER BY id ASC
+    </select>
+
+    <select id="countByStudentName" resultType="int">
         SELECT COUNT(*) FROM course_template
-        WHERE user_id = #{userId} AND student_id = #{studentId}
+        WHERE user_id = #{userId} AND student_name = #{studentName}
         <if test="excludeId != null">AND id != #{excludeId}</if>
     </select>
 
@@ -67,6 +69,10 @@
 
     <delete id="delete">
         DELETE FROM course_template WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteAllByUser">
+        DELETE FROM course_template WHERE user_id = #{userId}
     </delete>
 
 </mapper>

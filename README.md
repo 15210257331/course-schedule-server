@@ -111,7 +111,34 @@ TeacherOS 后端为「兼职教师工作台」提供 REST API 服务，支撑教
 
 ---
 
-## 六、目录结构
+## 六、安全配置（密钥与密码管理）
+
+生产环境部署时，以下敏感配置**不要**硬编码进仓库，应通过环境变量注入：
+
+| 敏感项 | 位置 | 建议环境变量 | 说明 |
+|---|---|---|---|
+| JWT 签名密钥 | `application.yaml` → `jwt.secret` | `JWT_SECRET` | 需 >= 32 字节的随机串；泄露后所有登录态可被伪造 |
+| 数据库密码 | `application-*.yaml` → `spring.datasource.password` | `SPRING_DATASOURCE_PASSWORD` | 现仓库内 `application-dev.yaml` 为开发占位值 |
+| 数据库账号 | `spring.datasource.username` | `SPRING_DATASOURCE_USERNAME` | 生产建议使用只读/最小权限账号 |
+| 邮箱 SMTP 凭据 | `spring.mail.*` | `SPRING_MAIL_USERNAME` / `SPRING_MAIL_PASSWORD` | 启用真实邮件（`mail.enabled=true`）时使用 |
+
+Spring Boot 允许用环境变量覆盖配置，例如：
+
+```bash
+export JWT_SECRET="$(openssl rand -base64 48)"
+export SPRING_DATASOURCE_PASSWORD="你的生产密码"
+export SPRING_MAIL_HOST=smtp.exmail.qq.com
+export SPRING_MAIL_USERNAME=no-reply@example.com
+export SPRING_MAIL_PASSWORD="你的授权码"
+
+./mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+```
+
+**当前状态说明**：`application-dev.yaml` 中的数据库密码与 `application.yaml` 中的 JWT 密钥均为开发占位值，仅用于本地联调；正式部署前务必改用环境变量并更新密钥。
+
+---
+
+## 七、目录结构
 
 ```
 src/main/java/com/chenxiaofei/coursescheduleserver/
@@ -131,7 +158,7 @@ src/main/java/com/chenxiaofei/coursescheduleserver/
 
 ---
 
-## 七、接口列表（`/api` 前缀，需 JWT，登录/注册除外）
+## 八、接口列表（`/api` 前缀，需 JWT，登录/注册/重置密码/上传除外）
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -139,6 +166,9 @@ src/main/java/com/chenxiaofei/coursescheduleserver/
 | POST | `/auth/register` | 注册 |
 | GET / PUT | `/auth/profile` | 查询 / 更新资料 |
 | PUT | `/auth/password` | 修改密码 |
+| POST | `/auth/reset-code` | 发送密码重置验证码 |
+| POST | `/auth/reset-password` | 校验验证码并重置密码 |
+| POST | `/upload/avatar` | 上传头像（返回 `/uploads/...` 相对地址） |
 | GET | `/courses` | 按时间范围查课程 |
 | POST | `/courses/page` | 课程分页 |
 | GET / POST / PUT / DELETE | `/courses/{id}` | 课程详情 / 新增 / 编辑 / 删除 |
@@ -160,7 +190,7 @@ src/main/java/com/chenxiaofei/coursescheduleserver/
 
 ---
 
-## 八、关键约定
+## 九、关键约定
 
 - 所有业务数据按 `user_id` 隔离，接口通过 `UserContext.getUserId()` 获取当前用户。
 - 收入 / 课时统计口径统一：`end_time < NOW()` 视为「已结束」，跨所有统计一致。

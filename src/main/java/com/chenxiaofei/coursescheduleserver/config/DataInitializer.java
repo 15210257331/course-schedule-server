@@ -1,10 +1,8 @@
 package com.chenxiaofei.coursescheduleserver.config;
 
 import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
-import com.chenxiaofei.coursescheduleserver.student.entity.Student;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.organization.mapper.OrganizationMapper;
-import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import org.mindrot.jbcrypt.BCrypt;
 import org.slf4j.Logger;
@@ -24,13 +22,10 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserMapper userMapper;
     private final OrganizationMapper organizationMapper;
-    private final StudentMapper studentMapper;
 
-    public DataInitializer(UserMapper userMapper, OrganizationMapper organizationMapper,
-                           StudentMapper studentMapper) {
+    public DataInitializer(UserMapper userMapper, OrganizationMapper organizationMapper) {
         this.userMapper = userMapper;
         this.organizationMapper = organizationMapper;
-        this.studentMapper = studentMapper;
     }
 
     @Override
@@ -54,11 +49,6 @@ public class DataInitializer implements CommandLineRunner {
         organizationMapper.insert(xdf);
         organizationMapper.insert(xes);
 
-        studentMapper.insert(stu(uid, "张三", "初三", "数学", xdf.getId(), "350"));
-        studentMapper.insert(stu(uid, "李四", "高一", "物理", xdf.getId(), "380"));
-        studentMapper.insert(stu(uid, "王五", "初二", "英语", xes.getId(), "300"));
-        studentMapper.insert(stu(uid, "赵六", "高三", "数学", xes.getId(), "400"));
-
         log.info("初始化完成。默认账号：admin / admin123");
     }
 
@@ -71,16 +61,5 @@ public class DataInitializer implements CommandLineRunner {
         o.setAddress(address);
         o.setDefaultFee(new BigDecimal(fee));
         return o;
-    }
-
-    private Student stu(Long uid, String name, String grade, String subject, Long orgId, String fee) {
-        Student s = new Student();
-        s.setUserId(uid);
-        s.setName(name);
-        s.setGrade(grade);
-        s.setSubject(subject);
-        s.setOrganizationId(orgId);
-        s.setFee(new BigDecimal(fee));
-        return s;
     }
 }
