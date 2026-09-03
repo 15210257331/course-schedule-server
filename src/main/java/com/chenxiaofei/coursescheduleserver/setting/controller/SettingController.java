@@ -3,7 +3,7 @@ package com.chenxiaofei.coursescheduleserver.setting.controller;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.setting.dto.SettingsSaveRequest;
 import com.chenxiaofei.coursescheduleserver.setting.service.SettingService;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,7 +21,7 @@ public class SettingController {
         this.service = service;
     }
 
-    @GetMapping
+    @PostMapping("/list")
     public Result<Map<String, String>> list() {
         return Result.ok(service.list());
     }

@@ -39,6 +39,20 @@ public class SchemaMigration implements CommandLineRunner {
                 "ALTER TABLE course_template ADD COLUMN stage VARCHAR(20) NULL AFTER subject");
         addColumnIfMissing("course", "stage",
                 "ALTER TABLE course ADD COLUMN stage VARCHAR(20) NULL AFTER subject");
+        migrateCourseType();
+    }
+
+    /**
+     * 课程类型统一为「一对一 / 家教 / 班课」三类，迁移历史旧值（幂等）：
+     * 家教版→家教，小班课/大班课→班课，试听→一对一。
+     */
+    private void migrateCourseType() {
+        String[][] tables = {{"course", "course_type"}, {"course_template", "course_type"}};
+        for (String[] t : tables) {
+            jdbc.update("UPDATE " + t[0] + " SET " + t[1] + " = '家教' WHERE " + t[1] + " = '家教版'");
+            jdbc.update("UPDATE " + t[0] + " SET " + t[1] + " = '班课' WHERE " + t[1] + " IN ('小班课', '大班课')");
+            jdbc.update("UPDATE " + t[0] + " SET " + t[1] + " = '一对一' WHERE " + t[1] + " = '试听'");
+        }
     }
 
     private void addColumnIfMissing(String table, String column, String ddl) {

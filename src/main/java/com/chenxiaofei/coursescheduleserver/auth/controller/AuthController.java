@@ -11,7 +11,6 @@ import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
 import com.chenxiaofei.coursescheduleserver.auth.service.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -38,7 +37,7 @@ public class AuthController {
         return Result.ok(authService.register(request));
     }
 
-    @GetMapping("/profile")
+    @PostMapping("/profile")
     public Result<User> profile() {
         return Result.ok(authService.profile(UserContext.getUserId()));
     }

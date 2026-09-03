@@ -25,10 +25,19 @@
     </select>
 
     <select id="incomeByOrganization" resultType="map">
-        SELECT o.name AS name, IFNULL(SUM(c.fee), 0) AS value FROM course c
+        SELECT CASE WHEN c.course_type = '家教'
+                    THEN CONCAT('家教-', COALESCE(c.student_name, '未知'))
+                    ELSE COALESCE(o.name, '未分类')
+               END AS name,
+               IFNULL(SUM(c.fee), 0) AS value
+        FROM course c
         LEFT JOIN organization o ON o.id = c.organization_id
         WHERE c.user_id = #{userId} AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
-        GROUP BY c.organization_id, o.name ORDER BY value DESC
+        GROUP BY CASE WHEN c.course_type = '家教'
+                      THEN CONCAT('家教-', COALESCE(c.student_name, '未知'))
+                      ELSE COALESCE(o.name, '未分类')
+                 END
+        ORDER BY value DESC
     </select>
 
     <select id="incomeByStudent" resultType="map">
@@ -51,18 +60,34 @@
         FROM course c
         LEFT JOIN organization o ON o.id = c.organization_id
         WHERE c.user_id = #{userId} AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
-        GROUP BY c.student_name, o.name ORDER BY fee DESC
+        GROUP BY c.student_name, o.name
+        ORDER BY IFNULL(o.name, '') = '', IFNULL(o.name, ''), fee DESC
     </select>
 
     <select id="feeDetailByOrganization" resultType="map">
-        SELECT IFNULL(o.name, '未分类') AS name,
-               GROUP_CONCAT(DISTINCT c.student_name SEPARATOR '·') AS studentNames,
+        SELECT CASE WHEN c.course_type = '家教'
+                    THEN CONCAT('家教-', COALESCE(c.student_name, '未知'))
+                    ELSE COALESCE(o.name, '未分类')
+               END AS name,
+               CASE WHEN MAX(c.course_type) = '家教' THEN 'tutor' ELSE 'org' END AS targetType,
+               CASE WHEN MAX(c.course_type) = '家教'
+                    THEN COALESCE(MAX(c.student_name), '未知')
+                    ELSE COALESCE(MAX(o.name), '未分类')
+               END AS targetKey,
+               CASE WHEN MAX(c.course_type) = '家教'
+                    THEN ''
+                    ELSE GROUP_CONCAT(DISTINCT c.student_name SEPARATOR '·')
+               END AS studentNames,
                COUNT(*) AS courseCount,
                IFNULL(SUM(c.fee), 0) AS fee
         FROM course c
         LEFT JOIN organization o ON o.id = c.organization_id
         WHERE c.user_id = #{userId} AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
-        GROUP BY o.id, o.name ORDER BY fee DESC
+        GROUP BY CASE WHEN c.course_type = '家教'
+                      THEN CONCAT('家教-', COALESCE(c.student_name, '未知'))
+                      ELSE COALESCE(o.name, '未分类')
+                 END
+        ORDER BY fee DESC
     </select>
 
 </mapper>

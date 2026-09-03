@@ -6,7 +6,6 @@ import com.chenxiaofei.coursescheduleserver.common.Result;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,7 +25,7 @@ public class BackupController {
     }
 
     /** 导出：以 JSON 附件形式下载（由 Spring 的 Jackson 消息转换器序列化） */
-    @GetMapping("/export")
+    @PostMapping("/export")
     public ResponseEntity<BackupData> exportData() {
         BackupData data = service.exportData();
         String filename = "teacheros-backup-" + java.time.LocalDate.now() + ".json";

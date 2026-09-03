@@ -2,10 +2,13 @@ package com.chenxiaofei.coursescheduleserver.dashboard.controller;
 
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
+import com.chenxiaofei.coursescheduleserver.dashboard.dto.SettlementUpdateRequest;
 import com.chenxiaofei.coursescheduleserver.dashboard.service.DashboardService;
-import org.springframework.web.bind.annotation.GetMapping;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
@@ -22,23 +25,35 @@ public class DashboardController {
         this.dashboardService = dashboardService;
     }
 
-    @GetMapping("/summary")
+    @PostMapping("/summary")
     public Result<Map<String, Object>> summary() {
         return Result.ok(dashboardService.summary());
     }
 
-    @GetMapping("/today-courses")
+    @PostMapping("/today-courses")
     public Result<List<Course>> todayCourses() {
         return Result.ok(dashboardService.todayCourses());
     }
 
-    @GetMapping("/income-report")
-    public Result<Map<String, Object>> incomeReport(@RequestParam(defaultValue = "30") int days,
-                                                    @RequestParam(required = false) String start,
-                                                    @RequestParam(required = false) String end) {
-        if (start != null && !start.isBlank() && end != null && !end.isBlank()) {
-            return Result.ok(dashboardService.incomeReport(LocalDate.parse(start), LocalDate.parse(end)));
+    @PostMapping("/income-report")
+    public Result<Map<String, Object>> incomeReport(@RequestBody(required = false) Map<String, Object> body) {
+        if (body != null) {
+            String start = (String) body.get("start");
+            String end = (String) body.get("end");
+            if (start != null && !start.isBlank() && end != null && !end.isBlank()) {
+                return Result.ok(dashboardService.incomeReport(LocalDate.parse(start), LocalDate.parse(end)));
+            }
+            Object daysObj = body.get("days");
+            if (daysObj instanceof Number) {
+                return Result.ok(dashboardService.incomeReport(((Number) daysObj).intValue()));
+            }
         }
-        return Result.ok(dashboardService.incomeReport(days));
+        return Result.ok(dashboardService.incomeReport(30));
+    }
+
+    @PutMapping("/settlement")
+    public Result<Void> updateSettlement(@Valid @RequestBody SettlementUpdateRequest request) {
+        dashboardService.updateSettlement(request);
+        return Result.ok();
     }
 }

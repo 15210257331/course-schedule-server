@@ -7,6 +7,7 @@ import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import com.chenxiaofei.coursescheduleserver.setting.service.SettingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,9 +23,11 @@ import java.util.List;
 public class CourseService {
 
     private final CourseMapper courseMapper;
+    private final SettingService settingService;
 
-    public CourseService(CourseMapper courseMapper) {
+    public CourseService(CourseMapper courseMapper, SettingService settingService) {
         this.courseMapper = courseMapper;
+        this.settingService = settingService;
     }
 
     public List<Course> listInRange(LocalDateTime start, LocalDateTime end, String title) {
@@ -273,13 +276,22 @@ public class CourseService {
         c.setStatus(request.getStatus());
         c.setColor(request.getColor());
         c.setReminderOffsetMinutes(request.getReminderOffsetMinutes() == null
-                ? 30 : request.getReminderOffsetMinutes());
+                ? getDefaultReminderOffset() : request.getReminderOffsetMinutes());
         if (request.getRepeatType() != null) {
             c.setRepeatType(request.getRepeatType());
             c.setRepeatEndDate(request.getRepeatEndDate());
         }
         if (request.getParentId() != null) {
             c.setParentId(request.getParentId());
+        }
+    }
+
+    private int getDefaultReminderOffset() {
+        try {
+            String value = settingService.list().get("reminderOffset");
+            return value != null ? Integer.parseInt(value) : 30;
+        } catch (Exception e) {
+            return 30;
         }
     }
 

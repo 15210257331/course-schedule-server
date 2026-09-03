@@ -8,16 +8,15 @@ import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate
 import com.chenxiaofei.coursescheduleserver.coursetemplate.service.CourseTemplateService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/course-templates")
@@ -29,8 +28,9 @@ public class CourseTemplateController {
         this.service = service;
     }
 
-    @GetMapping
-    public Result<List<CourseTemplate>> list(@RequestParam(required = false) String name) {
+    @PostMapping("/list")
+    public Result<List<CourseTemplate>> list(@RequestBody(required = false) Map<String, String> body) {
+        String name = (body != null) ? body.get("name") : null;
         String kw = (name == null || name.isBlank()) ? null : name.trim();
         return Result.ok(service.list(kw));
     }
@@ -40,8 +40,9 @@ public class CourseTemplateController {
         return Result.ok(service.page(request));
     }
 
-    @GetMapping("/{id}")
-    public Result<CourseTemplate> get(@PathVariable Long id) {
+    @PostMapping("/detail")
+    public Result<CourseTemplate> get(@RequestBody Map<String, Long> body) {
+        Long id = body.get("id");
         return Result.ok(service.get(id));
     }
 

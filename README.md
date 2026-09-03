@@ -69,8 +69,10 @@ TeacherOS 后端为「兼职教师工作台」提供 REST API 服务，支撑教
 - 学生字段解析同课程（绑定或自动建档，同步机构/科目/学段）。
 
 ### 4.4 学生（student）
-- 列表 / 详情 / 新增 / 编辑 / 删除。
-- **删除保护**：存在关联课程或课程模板时禁止删除。
+> **注**：学生管理功能已简化，学生信息通过课程/模板中的姓名字段自动关联，不再单独维护学生实体。
+
+- 学生以「姓名」为去重键，课程/模板录入学生姓名时自动绑定或自动建档。
+- 课程/模板保存时会同步学生的机构、科目、学段信息。
 
 ### 4.5 机构（organization）
 - 列表 / 分页 / 详情 / 新增 / 编辑 / 删除。
@@ -80,6 +82,7 @@ TeacherOS 后端为「兼职教师工作台」提供 REST API 服务，支撑教
 - **汇总** `summary`：今日收入、上月收入、本月收入、本年收入。
 - **今日课程** `today-courses`。
 - **收入报告** `income-report`：支持 `days`（近 N 天）与 `start/end`（指定日期范围）两种入参，返回趋势、机构/学生/学段占比、学生/机构费用明细、总额、总时长、总节数。
+- **结算状态更新** `settlement`：标记课程费用是否已结清，用于收入统计口径区分。
 - **口径统一**：收入与课时统计均以 `end_time < NOW()`（课程已结束）为准；课程去重按用户隔离。
 
 ### 4.7 提醒（notification）
@@ -88,9 +91,19 @@ TeacherOS 后端为「兼职教师工作台」提供 REST API 服务，支撑教
 
 ### 4.8 系统设置（setting）
 - 设置读取与保存（`user_id + setting_key` 唯一，`ON DUPLICATE KEY UPDATE` 幂等 upsert）。
-- 支持键：`defaultDuration`（默认时长）、`reminderOffset`（默认提醒）、`defaultFee`（默认课时费）、`browserNotify`（浏览器通知）、`defaultView`（默认视图）。
+- 支持键：
+  - `defaultDuration`：默认课程时长（分钟），新建课程/模板时自动填充
+  - `reminderOffset`：默认课程提醒（分钟），创建课程时若未指定提醒时间则使用此值
+  - `defaultFee`：默认课时费（元/小时），新建课程/模板时自动填充
+  - `browserNotify`：浏览器通知开关，控制是否弹出系统通知
+  - `defaultView`：默认视图（day/week/month），课程日历默认展示
+  - `idbCache`：本地缓存开关，控制是否使用 IndexedDB 缓存
 
-### 4.9 课程状态自动结算
+### 4.9 数据备份（backup）
+- **导出**：将当前用户的所有业务数据（课程/模板/机构/学生/设置）导出为 JSON 附件下载。
+- **导入**：全量替换当前用户数据（先清空后插入），用于数据迁移或恢复。
+
+### 4.10 课程状态自动结算
 - `CourseStatusScheduler`（每分钟）：把 `status = scheduled` 且 `end_time` 已过期的课程批量置为 `completed`，保证收入/课时统计与课程状态一致。
 
 ---
@@ -144,6 +157,7 @@ export SPRING_MAIL_PASSWORD="你的授权码"
 src/main/java/com/chenxiaofei/coursescheduleserver/
 ├── CourseScheduleServerApplication.java  # 启动类（启用定时任务）
 ├── auth/            # 认证：登录/注册/资料/密码
+├── backup/          # 数据备份：导出/导入
 ├── common/          # Result / PageResult / BusinessException / 全局异常
 ├── config/          # Web 配置、JWT 属性、启动迁移、数据初始化
 ├── course/          # 课程：服务 / 控制器 / 状态结算定时任务
@@ -153,47 +167,101 @@ src/main/java/com/chenxiaofei/coursescheduleserver/
 ├── organization/    # 机构
 ├── security/        # JWT 工具 / 拦截器 / UserContext
 ├── setting/         # 系统设置
-└── student/         # 学生
+├── upload/          # 文件上传
+└── student/         # 学生（已简化，通过课程/模板关联）
 ```
 
 ---
 
 ## 八、接口列表（`/api` 前缀，需 JWT，登录/注册/重置密码/上传除外）
 
+> **注意**：自 v2.0 起，所有查询接口（原 GET）统一改为 POST 请求，参数通过 RequestBody 传递。
+
+### 认证（auth）
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | POST | `/auth/login` | 登录 |
 | POST | `/auth/register` | 注册 |
-| GET / PUT | `/auth/profile` | 查询 / 更新资料 |
+| POST | `/auth/profile` | 查询个人资料 |
+| PUT | `/auth/profile` | 更新个人资料 |
 | PUT | `/auth/password` | 修改密码 |
 | POST | `/auth/reset-code` | 发送密码重置验证码 |
 | POST | `/auth/reset-password` | 校验验证码并重置密码 |
-| POST | `/upload/avatar` | 上传头像（返回 `/uploads/...` 相对地址） |
-| GET | `/courses` | 按时间范围查课程 |
+
+### 课程（courses）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/courses/list` | 按时间范围查课程（body: start, end, title） |
 | POST | `/courses/page` | 课程分页 |
-| GET / POST / PUT / DELETE | `/courses/{id}` | 课程详情 / 新增 / 编辑 / 删除 |
-| POST | `/courses/{id}/copy` | 复制课程 |
-| PUT | `/courses/{id}/move` | 移动课程 |
-| POST | `/courses/copy-week` | 复制本周到下周 |
-| GET / POST | `/course-templates` 等 | 课程模板 CRUD（含 `/page`） |
-| GET / POST / PUT / DELETE | `/students` | 学生 CRUD |
-| GET / POST / PUT / DELETE | `/organizations` | 机构 CRUD（含 `/page`） |
-| GET | `/dashboard/summary` | 工作台汇总 |
-| GET | `/dashboard/today-courses` | 今日课程 |
-| GET | `/dashboard/income-report` | 收入报告（`days` 或 `start/end`） |
-| GET / PUT | `/settings` | 读取 / 保存设置 |
-| GET | `/notifications` | 提醒列表 |
-| GET | `/notifications/due` | 未读到期提醒 |
+| POST | `/courses/detail` | 课程详情（body: id） |
+| POST | `/courses` | 新增课程 |
+| PUT | `/courses/{id}` | 编辑课程 |
+| DELETE | `/courses/{id}` | 删除课程 |
+| PUT | `/courses/{id}/move` | 移动课程时间 |
+| POST | `/courses/copy-week` | 复制本周到下周（body: week） |
+
+### 课程模板（course-templates）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/course-templates/list` | 模板列表（body: name 可选） |
+| POST | `/course-templates/page` | 模板分页 |
+| POST | `/course-templates/detail` | 模板详情（body: id） |
+| POST | `/course-templates` | 新增模板 |
+| PUT | `/course-templates/{id}` | 编辑模板 |
+| DELETE | `/course-templates/{id}` | 删除模板 |
+
+### 机构（organizations）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/organizations/list` | 机构列表（body: name 可选） |
+| POST | `/organizations/page` | 机构分页 |
+| POST | `/organizations/detail` | 机构详情（body: id） |
+| POST | `/organizations` | 新增机构 |
+| PUT | `/organizations/{id}` | 编辑机构 |
+| DELETE | `/organizations/{id}` | 删除机构 |
+
+### 工作台统计（dashboard）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/dashboard/summary` | 汇总统计 |
+| POST | `/dashboard/today-courses` | 今日课程 |
+| POST | `/dashboard/income-report` | 收入报告（body: days 或 start/end） |
+| PUT | `/dashboard/settlement` | 更新结算状态 |
+
+### 系统设置（settings）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/settings/list` | 读取设置 |
+| PUT | `/settings` | 保存设置 |
+
+### 提醒（notifications）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/notifications/list` | 提醒列表（body: limit 可选，默认 20） |
+| POST | `/notifications/due` | 未读到期提醒 |
 | POST | `/notifications/{id}/read` | 标记已读 |
 | POST | `/notifications/read-all` | 全部已读 |
 | DELETE | `/notifications/{id}` | 删除提醒 |
+
+### 数据备份（backup）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/backup/export` | 导出数据（JSON 附件） |
+| POST | `/backup/import` | 导入数据（全量替换） |
+
+### 上传（upload）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| POST | `/upload/avatar` | 上传头像（multipart/form-data） |
 
 ---
 
 ## 九、关键约定
 
+- **接口规范**：自 v2.0 起，所有查询接口（原 GET）统一改为 POST 请求，参数通过 RequestBody 传递；路径采用 `/list`、`/page`、`/detail` 等语义化后缀。
 - 所有业务数据按 `user_id` 隔离，接口通过 `UserContext.getUserId()` 获取当前用户。
 - 收入 / 课时统计口径统一：`end_time < NOW()` 视为「已结束」，跨所有统计一致。
 - 课程完成状态由定时任务按时间自动结算，不依赖手动操作。
 - 学生以「姓名」为去重键，课程 / 模板录入学生姓名时自动绑定或自动建档。
 - 课程标题由科目 + 类型自动生成（前端），后端对标题做必填校验。
+- **默认配置贯通**：系统设置中的 `defaultDuration`（默认时长）、`defaultFee`（默认课时费）、`reminderOffset`（默认提醒）会在新建课程/模板时自动填充，创建课程时若未指定提醒时间则使用 `reminderOffset` 配置值。

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.dashboard.mapper.SettlementMapper">
+
+    <select id="listByMonth" resultType="com.chenxiaofei.coursescheduleserver.dashboard.entity.Settlement">
+        SELECT * FROM settlement
+        WHERE user_id = #{userId} AND settle_month = #{settleMonth}
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO settlement(user_id, settle_month, target_type, target_key, settled)
+        VALUES(#{userId}, #{settleMonth}, #{targetType}, #{targetKey}, #{settled})
+        ON DUPLICATE KEY UPDATE settled = VALUES(settled)
+    </insert>
+
+</mapper>

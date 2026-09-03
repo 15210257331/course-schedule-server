@@ -104,3 +104,15 @@ CREATE TABLE IF NOT EXISTS setting (
     updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_setting (user_id, setting_key)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+CREATE TABLE IF NOT EXISTS settlement (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT       NOT NULL,
+    settle_month VARCHAR(7)   NOT NULL COMMENT '结算月份 YYYY-MM',
+    target_type  VARCHAR(20)  NOT NULL COMMENT '行类型：org（机构/未分类）/ tutor（家教-学生）',
+    target_key   VARCHAR(100) NOT NULL COMMENT '行键：机构名 / 学生名',
+    settled      TINYINT(1)   DEFAULT 0 COMMENT '是否已结清',
+    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_settlement (user_id, settle_month, target_type, target_key),
+    INDEX idx_settlement_month (user_id, settle_month)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

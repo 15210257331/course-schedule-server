@@ -9,19 +9,17 @@ import com.chenxiaofei.coursescheduleserver.course.dto.MoveCourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.service.CourseService;
 import jakarta.validation.Valid;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/courses")
@@ -33,14 +31,16 @@ public class CourseController {
         this.courseService = courseService;
     }
 
-    @GetMapping
-    public Result<List<Course>> list(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime end,
-            @RequestParam(required = false) String title) {
-        if (start == null || end == null) {
+    @PostMapping("/list")
+    public Result<List<Course>> list(@RequestBody Map<String, String> body) {
+        String startStr = body.get("start");
+        String endStr = body.get("end");
+        String title = body.get("title");
+        if (startStr == null || endStr == null) {
             throw new BusinessException(400, "缺少 start/end 时间范围参数");
         }
+        LocalDateTime start = LocalDateTime.parse(startStr);
+        LocalDateTime end = LocalDateTime.parse(endStr);
         String kw = (title == null || title.isBlank()) ? null : title.trim();
         return Result.ok(courseService.listInRange(start, end, kw));
     }
@@ -50,8 +50,9 @@ public class CourseController {
         return Result.ok(courseService.page(request));
     }
 
-    @GetMapping("/{id}")
-    public Result<Course> get(@PathVariable Long id) {
+    @PostMapping("/detail")
+    public Result<Course> get(@RequestBody Map<String, Long> body) {
+        Long id = body.get("id");
         return Result.ok(courseService.get(id));
     }
 
@@ -71,18 +72,14 @@ public class CourseController {
         return Result.ok();
     }
 
-    @PostMapping("/{id}/copy")
-    public Result<Course> copy(@PathVariable Long id, @RequestBody MoveCourseRequest request) {
-        return Result.ok(courseService.copy(id, request.getStartTime(), request.getEndTime()));
-    }
-
     @PutMapping("/{id}/move")
     public Result<Course> move(@PathVariable Long id, @RequestBody MoveCourseRequest request) {
         return Result.ok(courseService.move(id, request.getStartTime(), request.getEndTime()));
     }
 
     @PostMapping("/copy-week")
-    public Result<Integer> copyWeek(@RequestParam(defaultValue = "1") int week) {
+    public Result<Integer> copyWeek(@RequestBody Map<String, Integer> body) {
+        int week = body.getOrDefault("week", 1);
         return Result.ok(courseService.copyWeekTo(week));
     }
 }
