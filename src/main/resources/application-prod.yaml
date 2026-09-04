@@ -1,9 +1,0 @@
-spring:
-  datasource:
-    url: jdbc:mysql://140.143.168.25:3306/course_schedule?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
-    username: root
-    password: 'chenzeran815600!@#'
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  sql:
-    init:
-      mode: never
