@@ -34,6 +34,10 @@ public class AuthService {
         if (user == null || !BCrypt.checkpw(request.getPassword(), user.getPassword())) {
             throw new BusinessException(401, "用户名或密码错误");
         }
+        if ("disabled".equals(user.getStatus())) {
+            throw new BusinessException(403, "账号已被禁用，请联系管理员");
+        }
+        userMapper.updateLastLoginAt(user.getId());
         return buildResponse(user);
     }
 
@@ -117,6 +121,7 @@ public class AuthService {
         resp.setAvatar(user.getAvatar());
         resp.setRole(user.getRole());
         resp.setSubjects(user.getSubjects());
+        resp.setEmail(user.getEmail());
         return resp;
     }
 }

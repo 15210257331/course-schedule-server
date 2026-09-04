@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.admin.mapper.AdminMessageMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO admin_message(title, content, type, target_type, target_ids, status, created_by)
+        VALUES(#{title}, #{content}, #{type}, #{targetType}, #{targetIds}, #{status}, #{createdBy})
+    </insert>
+
+    <update id="update">
+        UPDATE admin_message SET title = #{title}, content = #{content}, type = #{type},
+        target_type = #{targetType}, target_ids = #{targetIds} WHERE id = #{id}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE admin_message SET status = #{status} WHERE id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM admin_message WHERE id = #{id}
+    </delete>
+
+    <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.admin.entity.AdminMessage">
+        SELECT m.*, (SELECT COUNT(*) FROM admin_message_read r WHERE r.message_id = m.id) AS readCount
+        FROM admin_message m WHERE m.id = #{id}
+    </select>
+
+    <sql id="msgWhere">
+        <where>
+            <if test="type != null and type != ''">
+                AND type = #{type}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND title LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+    </sql>
+
+    <select id="countMessages" resultType="long">
+        SELECT COUNT(*) FROM admin_message
+        <include refid="msgWhere"/>
+    </select>
+
+    <select id="pageMessages" resultType="com.chenxiaofei.coursescheduleserver.admin.entity.AdminMessage">
+        SELECT m.*, (SELECT COUNT(*) FROM admin_message_read r WHERE r.message_id = m.id) AS readCount
+        FROM admin_message m
+        <include refid="msgWhere"/>
+        ORDER BY m.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 教师端可见消息：target_type=all，或 target_ids 中包含当前用户 -->
+    <select id="listForTeacher" resultType="com.chenxiaofei.coursescheduleserver.admin.entity.AdminMessage">
+        SELECT m.*, (SELECT COUNT(*) FROM admin_message_read r WHERE r.message_id = m.id) AS readCount,
+               EXISTS(SELECT 1 FROM admin_message_read r2 WHERE r2.message_id = m.id AND r2.user_id = #{userId}) AS isRead
+        FROM admin_message m
+        WHERE m.status = 'published'
+          AND (m.target_type = 'all'
+               OR FIND_IN_SET(#{userId}, m.target_ids) > 0)
+        ORDER BY m.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <insert id="insertRead">
+        INSERT IGNORE INTO admin_message_read(message_id, user_id) VALUES(#{messageId}, #{userId})
+    </insert>
+
+    <select id="countRead" resultType="int">
+        SELECT COUNT(*) FROM admin_message_read WHERE message_id = #{messageId}
+    </select>
+
+    <select id="listReadMessageIds" resultType="long">
+        SELECT message_id FROM admin_message_read WHERE user_id = #{userId}
+    </select>
+
+</mapper>

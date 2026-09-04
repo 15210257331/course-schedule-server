@@ -33,4 +33,59 @@
         UPDATE `user` SET password = #{password} WHERE id = #{id}
     </update>
 
+    <update id="updateLastLoginAt">
+        UPDATE `user` SET last_login_at = NOW() WHERE id = #{id}
+    </update>
+
+    <!-- ========== 管理端 ========== -->
+
+    <sql id="teacherWhere">
+        WHERE role = 'TEACHER'
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (username LIKE CONCAT('%', #{keyword}, '%')
+                 OR nickname LIKE CONCAT('%', #{keyword}, '%')
+                 OR email LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <select id="countTeachers" resultType="long">
+        SELECT COUNT(*) FROM `user`
+        <include refid="teacherWhere"/>
+    </select>
+
+    <select id="pageTeacherItems" resultType="com.chenxiaofei.coursescheduleserver.admin.dto.TeacherListItem">
+        SELECT u.id, u.username, u.nickname, u.avatar, u.email, u.phone, u.subjects,
+               u.status, u.disabled_reason AS disabledReason, u.disabled_at AS disabledAt,
+               u.last_login_at AS lastLoginAt, u.created_at AS createdAt,
+               (SELECT COUNT(*) FROM course c WHERE c.user_id = u.id) AS courseCount,
+               (SELECT COUNT(DISTINCT c2.student_name) FROM course c2
+                 WHERE c2.user_id = u.id AND c2.student_name IS NOT NULL AND c2.student_name != '') AS studentCount,
+               (SELECT COUNT(*) FROM organization o WHERE o.user_id = u.id) AS organizationCount
+        FROM `user` u
+        <include refid="teacherWhere"/>
+        ORDER BY u.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE `user`
+        SET status = #{status},
+            disabled_reason = #{disabledReason},
+            disabled_at = CASE WHEN #{status} = 'disabled' THEN NOW() ELSE NULL END
+        WHERE id = #{id}
+    </update>
+
+    <select id="listTeachers" resultType="com.chenxiaofei.coursescheduleserver.auth.entity.User">
+        SELECT id, username, nickname, avatar, email FROM `user`
+        WHERE role = 'TEACHER' AND status = 'active'
+        <if test="keyword != null and keyword != ''">
+            AND (username LIKE CONCAT('%', #{keyword}, '%') OR nickname LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        ORDER BY id DESC
+        LIMIT 200
+    </select>
+
 </mapper>

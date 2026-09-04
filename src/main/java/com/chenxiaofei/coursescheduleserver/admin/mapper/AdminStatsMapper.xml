@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.admin.mapper.AdminStatsMapper">
+
+    <select id="countTeachers" resultType="long">
+        SELECT COUNT(*) FROM `user` WHERE role = 'TEACHER'
+    </select>
+
+    <select id="countNewTeachers" resultType="long">
+        SELECT COUNT(*) FROM `user` WHERE role = 'TEACHER' AND created_at &gt;= #{start}
+    </select>
+
+    <select id="countCourses" resultType="long">
+        SELECT COUNT(*) FROM course
+    </select>
+
+    <select id="countCoursesInRange" resultType="long">
+        SELECT COUNT(*) FROM course WHERE DATE(start_time) BETWEEN #{start} AND #{end}
+    </select>
+
+    <select id="teacherTrend" resultType="map">
+        SELECT DATE(created_at) AS day, COUNT(*) AS count
+        FROM `user`
+        WHERE role = 'TEACHER' AND DATE(created_at) BETWEEN #{start} AND #{end}
+        GROUP BY DATE(created_at)
+        ORDER BY day ASC
+    </select>
+
+    <select id="courseTrend" resultType="map">
+        SELECT DATE(start_time) AS day, COUNT(*) AS count
+        FROM course
+        WHERE DATE(start_time) BETWEEN #{start} AND #{end}
+        GROUP BY DATE(start_time)
+        ORDER BY day ASC
+    </select>
+
+    <select id="countPublishedMessages" resultType="long">
+        SELECT COUNT(*) FROM admin_message WHERE status = 'published'
+    </select>
+
+    <select id="countMessageReads" resultType="long">
+        SELECT COUNT(*) FROM admin_message_read
+    </select>
+
+    <select id="recentMessages" resultType="com.chenxiaofei.coursescheduleserver.admin.entity.AdminMessage">
+        SELECT m.*, (SELECT COUNT(*) FROM admin_message_read r WHERE r.message_id = m.id) AS readCount
+        FROM admin_message m
+        ORDER BY m.id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="recentTeachers" resultType="com.chenxiaofei.coursescheduleserver.auth.entity.User">
+        SELECT id, username, nickname, avatar, email, subjects, status, created_at AS createdAt
+        FROM `user` WHERE role = 'TEACHER'
+        ORDER BY id DESC
+        LIMIT #{limit}
+    </select>
+
+</mapper>

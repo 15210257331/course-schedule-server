@@ -39,7 +39,41 @@ public class SchemaMigration implements CommandLineRunner {
                 "ALTER TABLE course_template ADD COLUMN stage VARCHAR(20) NULL AFTER subject");
         addColumnIfMissing("course", "stage",
                 "ALTER TABLE course ADD COLUMN stage VARCHAR(20) NULL AFTER subject");
+        addColumnIfMissing("user", "status",
+                "ALTER TABLE `user` ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER role");
+        addColumnIfMissing("user", "disabled_reason",
+                "ALTER TABLE `user` ADD COLUMN disabled_reason VARCHAR(500) NULL AFTER status");
+        addColumnIfMissing("user", "disabled_at",
+                "ALTER TABLE `user` ADD COLUMN disabled_at DATETIME NULL AFTER disabled_reason");
+        addColumnIfMissing("user", "last_login_at",
+                "ALTER TABLE `user` ADD COLUMN last_login_at DATETIME NULL AFTER disabled_at");
         migrateCourseType();
+        createAdminTables();
+    }
+
+    /** 管理端消息表（CREATE TABLE IF NOT EXISTS，幂等） */
+    private void createAdminTables() {
+        jdbc.execute("CREATE TABLE IF NOT EXISTS admin_message (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "title VARCHAR(200) NOT NULL COMMENT '消息标题'," +
+                "content TEXT NOT NULL COMMENT '消息内容'," +
+                "type VARCHAR(20) NOT NULL DEFAULT 'announcement' COMMENT '类型：announcement/activity/notice'," +
+                "target_type VARCHAR(20) NOT NULL DEFAULT 'all' COMMENT '目标：all/specific'," +
+                "target_ids VARCHAR(2000) COMMENT '目标教师ID列表，逗号分隔'," +
+                "status VARCHAR(20) NOT NULL DEFAULT 'published' COMMENT '状态：published/revoked'," +
+                "created_by BIGINT NOT NULL COMMENT '发布管理员ID'," +
+                "created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
+                "INDEX idx_msg_status (status)," +
+                "INDEX idx_msg_created (created_at)" +
+                ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4");
+        jdbc.execute("CREATE TABLE IF NOT EXISTS admin_message_read (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "message_id BIGINT NOT NULL," +
+                "user_id BIGINT NOT NULL," +
+                "read_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "UNIQUE KEY uk_msg_user (message_id, user_id)" +
+                ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4");
     }
 
     /**

@@ -9,7 +9,12 @@ CREATE TABLE IF NOT EXISTS `user` (
     avatar      VARCHAR(255),
     email       VARCHAR(100),
     phone       VARCHAR(20),
-    role        VARCHAR(20)  NOT NULL DEFAULT 'TEACHER',
+    subjects    VARCHAR(200),
+    role        VARCHAR(20)  NOT NULL DEFAULT 'TEACHER' COMMENT '角色：TEACHER/ADMIN',
+    status      VARCHAR(20)  NOT NULL DEFAULT 'active' COMMENT '账号状态：active/disabled',
+    disabled_reason VARCHAR(500),
+    disabled_at DATETIME,
+    last_login_at DATETIME,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_username (username)
@@ -115,4 +120,31 @@ CREATE TABLE IF NOT EXISTS settlement (
     updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_settlement (user_id, settle_month, target_type, target_key),
     INDEX idx_settlement_month (user_id, settle_month)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- ========== 管理端 ==========
+
+-- 管理员消息表
+CREATE TABLE IF NOT EXISTS admin_message (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    title        VARCHAR(200) NOT NULL COMMENT '消息标题',
+    content      TEXT         NOT NULL COMMENT '消息内容',
+    type         VARCHAR(20)  NOT NULL DEFAULT 'announcement' COMMENT '类型：announcement/activity/notice',
+    target_type  VARCHAR(20)  NOT NULL DEFAULT 'all' COMMENT '目标：all/specific',
+    target_ids   VARCHAR(2000) COMMENT '目标教师ID列表，逗号分隔（target_type=specific 时）',
+    status       VARCHAR(20)  NOT NULL DEFAULT 'published' COMMENT '状态：published/revoked',
+    created_by   BIGINT       NOT NULL COMMENT '发布管理员ID',
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at   DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_msg_status (status),
+    INDEX idx_msg_created (created_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- 消息阅读记录表
+CREATE TABLE IF NOT EXISTS admin_message_read (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    message_id BIGINT NOT NULL,
+    user_id    BIGINT NOT NULL,
+    read_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_msg_user (message_id, user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
