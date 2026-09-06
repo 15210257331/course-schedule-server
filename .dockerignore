@@ -1,0 +1,10 @@
+target/
+*.md
+.git/
+.gitignore
+.idea/
+*.iml
+uploads/
+src/main/resources/application*.yaml
+Dockerfile
+.dockerignore

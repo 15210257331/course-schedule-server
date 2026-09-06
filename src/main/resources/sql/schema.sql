@@ -57,16 +57,19 @@ CREATE TABLE IF NOT EXISTS course (
     repeat_type              VARCHAR(20),
     repeat_end_date          DATE,
     parent_id                BIGINT,
+    template_id              BIGINT,
     created_at               DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at               DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_course_user (user_id),
-    INDEX idx_course_start (user_id, start_time)
+    INDEX idx_course_start (user_id, start_time),
+    INDEX idx_course_tpl (user_id, template_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS course_template (
     id                BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id           BIGINT       NOT NULL,
     title             VARCHAR(100) NOT NULL,
+    name              VARCHAR(200) COMMENT '记录用（不展示）：学生姓名 课程类型 学段',
     student_id        BIGINT,
     student_name      VARCHAR(50),
     organization_id   BIGINT,

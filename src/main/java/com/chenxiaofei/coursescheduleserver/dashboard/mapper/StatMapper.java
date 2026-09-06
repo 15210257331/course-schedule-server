@@ -40,4 +40,8 @@ public interface StatMapper {
 
     List<Map<String, Object>> feeDetailByOrganization(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                                                       @Param("end") LocalDateTime end);
+
+    /** 机构维度下每个机构内各学生的费用明细（非家教课程，按机构+学生分组） */
+    List<Map<String, Object>> feeDetailByOrgStudent(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                                                    @Param("end") LocalDateTime end);
 }

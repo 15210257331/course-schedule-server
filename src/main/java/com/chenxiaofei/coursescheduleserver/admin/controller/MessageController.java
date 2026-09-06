@@ -35,4 +35,10 @@ public class MessageController {
         service.markRead(body.get("id"));
         return Result.ok();
     }
+
+    @PostMapping("/read-all")
+    public Result<Void> markAllRead() {
+        service.markAllRead();
+        return Result.ok();
+    }
 }

@@ -31,4 +31,6 @@ public class CourseTemplateRequest {
     private String color;
     /** 拖入日历时的重复规则：daily/weekly，NULL 不重复 */
     private String repeatType;
+    /** 编辑模板时是否同步到已排课程 */
+    private Boolean syncCourses;
 }

@@ -31,6 +31,8 @@ public class Course {
     private String repeatType;
     private LocalDate repeatEndDate;
     private Long parentId;
+    /** 排课来源模板 id（冗余，用于删除模板时级联删除、编辑模板时同步课程） */
+    private Long templateId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 

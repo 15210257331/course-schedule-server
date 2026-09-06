@@ -90,4 +90,19 @@
         ORDER BY fee DESC
     </select>
 
+    <select id="feeDetailByOrgStudent" resultType="map">
+        SELECT o.id AS organizationId,
+               COALESCE(o.name, '未分类') AS organizationName,
+               c.student_name AS studentName,
+               COUNT(*) AS courseCount,
+               IFNULL(SUM(c.fee), 0) AS fee
+        FROM course c
+        LEFT JOIN organization o ON o.id = c.organization_id
+        WHERE c.user_id = #{userId}
+          AND c.end_time &lt; NOW() AND c.start_time &gt;= #{start} AND c.start_time &lt; #{end}
+          AND (c.course_type IS NULL OR c.course_type &lt;&gt; '家教')
+        GROUP BY o.id, c.student_name
+        ORDER BY o.id, fee DESC
+    </select>
+
 </mapper>

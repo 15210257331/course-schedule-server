@@ -102,6 +102,11 @@ public class AdminMessageService {
         messageMapper.insertRead(id, UserContext.getUserId());
     }
 
+    /** 教师端：全部标记已读 */
+    public void markAllRead() {
+        messageMapper.insertReadAll(UserContext.getUserId());
+    }
+
     // ----------
 
     private void validate(AdminMessageRequest req) {

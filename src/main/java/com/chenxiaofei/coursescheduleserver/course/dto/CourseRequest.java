@@ -37,4 +37,6 @@ public class CourseRequest {
     private String repeatType;
     private LocalDate repeatEndDate;
     private Long parentId;
+    /** 排课来源模板 id（可选，删除模板时据此级联删除课程） */
+    private Long templateId;
 }

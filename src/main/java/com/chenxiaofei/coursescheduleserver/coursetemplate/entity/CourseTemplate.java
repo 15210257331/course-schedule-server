@@ -11,6 +11,8 @@ public class CourseTemplate {
     private Long id;
     private Long userId;
     private String title;
+    /** 记录用（不展示）：学生姓名 + 课程类型 + 学段 */
+    private String name;
     private Long studentId;
     private String studentName;
     private Long organizationId;

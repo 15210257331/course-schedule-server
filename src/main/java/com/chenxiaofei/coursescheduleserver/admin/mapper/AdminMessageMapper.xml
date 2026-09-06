@@ -69,6 +69,14 @@
         INSERT IGNORE INTO admin_message_read(message_id, user_id) VALUES(#{messageId}, #{userId})
     </insert>
 
+    <insert id="insertReadAll">
+        INSERT IGNORE INTO admin_message_read(message_id, user_id)
+        SELECT m.id, #{userId} FROM admin_message m
+        WHERE m.status = 'published'
+          AND (m.target_type = 'all'
+               OR FIND_IN_SET(#{userId}, m.target_ids) &gt; 0)
+    </insert>
+
     <select id="countRead" resultType="int">
         SELECT COUNT(*) FROM admin_message_read WHERE message_id = #{messageId}
     </select>

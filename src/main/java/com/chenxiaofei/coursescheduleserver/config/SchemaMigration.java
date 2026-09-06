@@ -29,6 +29,8 @@ public class SchemaMigration implements CommandLineRunner {
     public void run(String... args) {
         addColumnIfMissing("course_template", "student_name",
                 "ALTER TABLE course_template ADD COLUMN student_name VARCHAR(50) NULL AFTER student_id");
+        addColumnIfMissing("course_template", "name",
+                "ALTER TABLE course_template ADD COLUMN name VARCHAR(200) NULL COMMENT '记录用（不展示）：学生姓名 课程类型 学段' AFTER title");
         addColumnIfMissing("course", "student_name",
                 "ALTER TABLE course ADD COLUMN student_name VARCHAR(50) NULL AFTER student_id");
         addColumnIfMissing("organization", "color",
@@ -39,6 +41,8 @@ public class SchemaMigration implements CommandLineRunner {
                 "ALTER TABLE course_template ADD COLUMN stage VARCHAR(20) NULL AFTER subject");
         addColumnIfMissing("course", "stage",
                 "ALTER TABLE course ADD COLUMN stage VARCHAR(20) NULL AFTER subject");
+        addColumnIfMissing("course", "template_id",
+                "ALTER TABLE course ADD COLUMN template_id BIGINT NULL AFTER parent_id");
         addColumnIfMissing("user", "status",
                 "ALTER TABLE `user` ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'active' AFTER role");
         addColumnIfMissing("user", "disabled_reason",

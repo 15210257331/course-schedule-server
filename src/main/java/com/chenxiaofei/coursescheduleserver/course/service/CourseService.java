@@ -219,6 +219,7 @@ public class CourseService {
                 next.setRepeatType(repeatType);
                 next.setRepeatEndDate(repeatEnd);
                 next.setParentId(c.getId());
+                next.setTemplateId(c.getTemplateId());
                 courseMapper.insert(next);
             }
         }
@@ -283,6 +284,9 @@ public class CourseService {
         }
         if (request.getParentId() != null) {
             c.setParentId(request.getParentId());
+        }
+        if (request.getTemplateId() != null) {
+            c.setTemplateId(request.getTemplateId());
         }
     }
 

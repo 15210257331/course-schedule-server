@@ -57,8 +57,12 @@ public class CourseTemplateController {
     }
 
     @DeleteMapping("/{id}")
-    public Result<Void> delete(@PathVariable Long id) {
+    public Result<Integer> delete(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
+        boolean withCourses = body != null && Boolean.TRUE.equals(body.get("withCourses"));
+        if (withCourses) {
+            return Result.ok(service.deleteWithCourses(id));
+        }
         service.delete(id);
-        return Result.ok();
+        return Result.ok(0);
     }
 }

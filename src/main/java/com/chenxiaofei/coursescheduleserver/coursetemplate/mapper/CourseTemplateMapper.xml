@@ -53,14 +53,14 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO course_template(user_id, title, student_id, student_name, organization_id, subject, stage, course_type,
+        INSERT INTO course_template(user_id, title, name, student_id, student_name, organization_id, subject, stage, course_type,
         duration_minutes, fee, fee_manual, location, note, color, repeat_type)
-        VALUES(#{userId}, #{title}, #{studentId}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
+        VALUES(#{userId}, #{title}, #{name}, #{studentId}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
         #{durationMinutes}, #{fee}, #{feeManual}, #{location}, #{note}, #{color}, #{repeatType})
     </insert>
 
     <update id="update">
-        UPDATE course_template SET title = #{title}, student_id = #{studentId}, student_name = #{studentName},
+        UPDATE course_template SET title = #{title}, name = #{name}, student_id = #{studentId}, student_name = #{studentName},
         organization_id = #{organizationId}, subject = #{subject}, stage = #{stage}, course_type = #{courseType},
         duration_minutes = #{durationMinutes}, fee = #{fee}, fee_manual = #{feeManual},
         location = #{location}, note = #{note}, color = #{color}, repeat_type = #{repeatType}

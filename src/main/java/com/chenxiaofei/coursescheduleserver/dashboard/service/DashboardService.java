@@ -82,6 +82,7 @@ public class DashboardService {
         List<Map<String, Object>> orgDetail = statMapper.feeDetailByOrganization(userId, start, end);
         Map<String, Object> settleStat = attachSettlement(userId, settleMonth, orgDetail);
         result.put("organizationFeeDetail", orgDetail);
+        result.put("organizationStudentDetail", statMapper.feeDetailByOrgStudent(userId, start, end));
         result.put("settled", settleStat.get("settled"));
         result.put("unsettled", settleStat.get("unsettled"));
 

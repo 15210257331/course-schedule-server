@@ -32,6 +32,9 @@ public interface AdminMessageMapper {
 
     int insertRead(@Param("messageId") Long messageId, @Param("userId") Long userId);
 
+    /** 教师端：将当前用户可见的全部已发布消息标记为已读 */
+    int insertReadAll(@Param("userId") Long userId);
+
     int countRead(@Param("messageId") Long messageId);
 
     /** 当前用户已读的消息ID集合 */

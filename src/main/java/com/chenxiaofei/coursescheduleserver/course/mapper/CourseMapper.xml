@@ -46,10 +46,10 @@
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO course(user_id, title, student_id, student_name, organization_id, subject, stage, course_type,
         start_time, end_time, fee, fee_manual, location, note, status, color, reminder_offset_minutes,
-        repeat_type, repeat_end_date, parent_id)
+        repeat_type, repeat_end_date, parent_id, template_id)
         VALUES(#{userId}, #{title}, #{studentId}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
         #{startTime}, #{endTime}, #{fee}, #{feeManual}, #{location}, #{note}, #{status}, #{color},
-        #{reminderOffsetMinutes}, #{repeatType}, #{repeatEndDate}, #{parentId})
+        #{reminderOffsetMinutes}, #{repeatType}, #{repeatEndDate}, #{parentId}, #{templateId})
     </insert>
 
     <update id="update">
@@ -68,6 +68,18 @@
     <delete id="delete">
         DELETE FROM course WHERE id = #{id} AND user_id = #{userId}
     </delete>
+
+    <delete id="deleteByTemplate">
+        DELETE FROM course WHERE user_id = #{userId} AND template_id = #{templateId}
+    </delete>
+
+    <select id="listByTemplate" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        SELECT * FROM course WHERE user_id = #{userId} AND template_id = #{templateId} ORDER BY start_time
+    </select>
+
+    <update id="clearTemplate">
+        UPDATE course SET template_id = NULL WHERE user_id = #{userId} AND template_id = #{templateId}
+    </update>
 
     <delete id="deleteAllByUser">
         DELETE FROM course WHERE user_id = #{userId}
