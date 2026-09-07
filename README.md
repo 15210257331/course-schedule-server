@@ -265,3 +265,8 @@ src/main/java/com/chenxiaofei/coursescheduleserver/
 - 学生以「姓名」为去重键，课程 / 模板录入学生姓名时自动绑定或自动建档。
 - 课程标题由科目 + 类型自动生成（前端），后端对标题做必填校验。
 - **默认配置贯通**：系统设置中的 `defaultDuration`（默认时长）、`defaultFee`（默认课时费）、`reminderOffset`（默认提醒）会在新建课程/模板时自动填充，创建课程时若未指定提醒时间则使用 `reminderOffset` 配置值。
+
+## docker 构建脚本 将dockerfile 和jar包上传的服务器 然后构建镜像 启动容器
+docker build -t course-schedule-server:latest .  
+
+docker run -d --name course-schedule-server --restart unless-stopped -p 9999:8080 -v /root/web/course-schedule-server/uploads:/app/uploads course-schedule-server:latest  
