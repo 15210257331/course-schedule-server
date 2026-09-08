@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.attachment.mapper.AttachmentMapper">
+
+    <select id="listByBiz" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
+        SELECT * FROM attachment
+        WHERE user_id = #{userId} AND biz_type = #{bizType} AND biz_id = #{bizId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="listByUser" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
+        SELECT * FROM attachment
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <update id="updateGroup">
+        UPDATE attachment SET group_id = #{groupId}
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <delete id="deleteByGroup">
+        DELETE FROM attachment WHERE user_id = #{userId} AND group_id = #{groupId}
+    </delete>
+
+    <delete id="deleteAllByUser">
+        DELETE FROM attachment WHERE user_id = #{userId}
+    </delete>
+
+    <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
+        SELECT * FROM attachment
+        WHERE id = #{id} AND user_id = #{userId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO attachment(user_id, group_id, biz_type, biz_id, file_name, file_path, file_size, mime_type)
+        VALUES(#{userId}, #{groupId}, #{bizType}, #{bizId}, #{fileName}, #{filePath}, #{fileSize}, #{mimeType})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM attachment WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteByBiz">
+        DELETE FROM attachment WHERE user_id = #{userId} AND biz_type = #{bizType} AND biz_id = #{bizId}
+    </delete>
+
+</mapper>

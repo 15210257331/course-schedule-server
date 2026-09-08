@@ -113,7 +113,6 @@ public class CourseService {
         Course src = get(id);
         CourseRequest req = new CourseRequest();
         req.setTitle(src.getTitle());
-        req.setStudentId(src.getStudentId());
         req.setStudentName(src.getStudentName());
         req.setOrganizationId(src.getOrganizationId());
         req.setSubject(src.getSubject());
@@ -122,7 +121,6 @@ public class CourseService {
         req.setStartTime(newStart);
         req.setEndTime(newEnd);
         req.setFee(src.getFee());
-        req.setFeeManual(true);
         req.setLocation(src.getLocation());
         req.setNote(src.getNote());
         req.setStatus("scheduled");
@@ -170,8 +168,7 @@ public class CourseService {
             CourseRequest req = toRequest(src);
             req.setStartTime(newStart);
             req.setEndTime(newEnd);
-            req.setFeeManual(true);
-            courseMapper.insert(buildFrom(req, userId, src.getFee(), true));
+            courseMapper.insert(buildFrom(req, userId, src.getFee()));
             count++;
         }
         return count;
@@ -201,7 +198,6 @@ public class CourseService {
                 Course next = new Course();
                 next.setUserId(c.getUserId());
                 next.setTitle(c.getTitle());
-                next.setStudentId(c.getStudentId());
                 next.setStudentName(c.getStudentName());
                 next.setOrganizationId(c.getOrganizationId());
                 next.setSubject(c.getSubject());
@@ -210,7 +206,6 @@ public class CourseService {
                 next.setStartTime(nextStart);
                 next.setEndTime(nextEnd);
                 next.setFee(c.getFee());
-                next.setFeeManual(c.getFeeManual());
                 next.setLocation(c.getLocation());
                 next.setNote(c.getNote());
                 next.setStatus("scheduled");
@@ -228,7 +223,6 @@ public class CourseService {
     private CourseRequest toRequest(Course src) {
         CourseRequest req = new CourseRequest();
         req.setTitle(src.getTitle());
-        req.setStudentId(src.getStudentId());
         req.setStudentName(src.getStudentName());
         req.setOrganizationId(src.getOrganizationId());
         req.setSubject(src.getSubject());
@@ -245,12 +239,11 @@ public class CourseService {
         return req;
     }
 
-    private Course buildFrom(CourseRequest request, Long userId, BigDecimal fee, boolean feeManual) {
+    private Course buildFrom(CourseRequest request, Long userId, BigDecimal fee) {
         Course c = new Course();
         c.setUserId(userId);
         apply(c, request);
         c.setFee(fee);
-        c.setFeeManual(feeManual);
         if (c.getStatus() == null) {
             c.setStatus("scheduled");
         }
@@ -262,7 +255,6 @@ public class CourseService {
 
     private void apply(Course c, CourseRequest request) {
         c.setTitle(request.getTitle());
-        c.setStudentId(request.getStudentId());
         c.setStudentName(request.getStudentName());
         c.setOrganizationId(request.getOrganizationId());
         c.setSubject(request.getSubject());
@@ -271,7 +263,6 @@ public class CourseService {
         c.setStartTime(request.getStartTime());
         c.setEndTime(request.getEndTime());
         c.setFee(request.getFee());
-        c.setFeeManual(request.getFeeManual() != null && request.getFeeManual());
         c.setLocation(request.getLocation());
         c.setNote(request.getNote());
         c.setStatus(request.getStatus());

@@ -14,7 +14,6 @@ public class CourseRequest {
     @NotBlank(message = "课程标题不能为空")
     private String title;
 
-    private Long studentId;
     private String studentName;
     private Long organizationId;
     private String subject;
@@ -28,7 +27,6 @@ public class CourseRequest {
     private LocalDateTime endTime;
 
     private BigDecimal fee;
-    private Boolean feeManual;
     private String location;
     private String note;
     private String status;

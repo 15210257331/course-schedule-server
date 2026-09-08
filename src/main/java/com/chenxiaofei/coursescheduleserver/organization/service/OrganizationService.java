@@ -83,7 +83,6 @@ public class OrganizationService {
         org.setContactName(request.getContactName());
         org.setContactPhone(request.getContactPhone());
         org.setAddress(request.getAddress());
-        org.setDefaultFee(request.getDefaultFee());
         org.setColor(request.getColor());
         org.setRemark(request.getRemark());
     }

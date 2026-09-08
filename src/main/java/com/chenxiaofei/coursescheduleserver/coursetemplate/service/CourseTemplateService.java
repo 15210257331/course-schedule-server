@@ -4,6 +4,7 @@ import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
+import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplatePageRequest;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,11 +25,14 @@ public class CourseTemplateService {
     private final CourseTemplateMapper mapper;
     private final UserMapper userMapper;
     private final CourseMapper courseMapper;
+    private final AttachmentService attachmentService;
 
-    public CourseTemplateService(CourseTemplateMapper mapper, UserMapper userMapper, CourseMapper courseMapper) {
+    public CourseTemplateService(CourseTemplateMapper mapper, UserMapper userMapper, CourseMapper courseMapper,
+                                 AttachmentService attachmentService) {
         this.mapper = mapper;
         this.userMapper = userMapper;
         this.courseMapper = courseMapper;
+        this.attachmentService = attachmentService;
     }
 
     public List<CourseTemplate> list() {
@@ -111,6 +114,8 @@ public class CourseTemplateService {
         Long userId = UserContext.getUserId();
         // 解除已排课程与模板的关联，避免悬空外键
         courseMapper.clearTemplate(userId, id);
+        // 级联删除模板附件
+        attachmentService.deleteByBiz("template", id);
         mapper.delete(id, userId);
     }
 
@@ -121,6 +126,8 @@ public class CourseTemplateService {
         Long userId = UserContext.getUserId();
         List<Course> courses = courseMapper.listByTemplate(userId, id);
         courseMapper.deleteByTemplate(userId, id);
+        // 级联删除模板附件
+        attachmentService.deleteByBiz("template", id);
         mapper.delete(id, userId);
         return courses.size();
     }
@@ -167,9 +174,6 @@ public class CourseTemplateService {
 
     private void apply(CourseTemplate t, CourseTemplateRequest request) {
         t.setTitle(request.getTitle());
-        // name 仅做记录不做展示：学生姓名 + 课程类型 + 学段
-        t.setName(joinName(request.getStudentName(), request.getCourseType(), request.getStage()));
-        t.setStudentId(request.getStudentId());
         t.setStudentName(request.getStudentName());
         t.setOrganizationId(request.getOrganizationId());
         t.setSubject(request.getSubject());
@@ -177,19 +181,8 @@ public class CourseTemplateService {
         t.setCourseType(request.getCourseType());
         t.setDurationMinutes(request.getDurationMinutes());
         t.setFee(request.getFee());
-        t.setFeeManual(request.getFeeManual());
         t.setLocation(request.getLocation());
         t.setNote(request.getNote());
-        t.setColor(request.getColor());
         t.setRepeatType(request.getRepeatType());
-    }
-
-    /** 拼 name：学生姓名 / 课程类型 / 学段（有值才拼，全空为 null） */
-    private String joinName(String studentName, String courseType, String stage) {
-        List<String> parts = new ArrayList<>();
-        if (StringUtils.hasText(studentName)) parts.add(studentName.trim());
-        if (StringUtils.hasText(courseType)) parts.add(courseType.trim());
-        if (StringUtils.hasText(stage)) parts.add(stage.trim());
-        return parts.isEmpty() ? null : String.join(" ", parts);
     }
 }

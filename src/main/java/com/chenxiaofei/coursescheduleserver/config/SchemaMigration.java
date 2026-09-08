@@ -29,12 +29,10 @@ public class SchemaMigration implements CommandLineRunner {
     public void run(String... args) {
         addColumnIfMissing("course_template", "student_name",
                 "ALTER TABLE course_template ADD COLUMN student_name VARCHAR(50) NULL AFTER student_id");
-        addColumnIfMissing("course_template", "name",
-                "ALTER TABLE course_template ADD COLUMN name VARCHAR(200) NULL COMMENT '记录用（不展示）：学生姓名 课程类型 学段' AFTER title");
         addColumnIfMissing("course", "student_name",
                 "ALTER TABLE course ADD COLUMN student_name VARCHAR(50) NULL AFTER student_id");
         addColumnIfMissing("organization", "color",
-                "ALTER TABLE organization ADD COLUMN color VARCHAR(20) NULL AFTER default_fee");
+                "ALTER TABLE organization ADD COLUMN color VARCHAR(20) NULL AFTER address");
         addColumnIfMissing("user", "subjects",
                 "ALTER TABLE `user` ADD COLUMN subjects VARCHAR(200) NULL AFTER phone");
         addColumnIfMissing("course_template", "stage",
@@ -53,6 +51,20 @@ public class SchemaMigration implements CommandLineRunner {
                 "ALTER TABLE `user` ADD COLUMN last_login_at DATETIME NULL AFTER disabled_at");
         migrateCourseType();
         createAdminTables();
+        createAttachmentGroupTables();
+    }
+
+    /** 附件分组表 + attachment.group_id 列（幂等） */
+    private void createAttachmentGroupTables() {
+        jdbc.execute("CREATE TABLE IF NOT EXISTS attachment_group (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "user_id BIGINT NOT NULL," +
+                "name VARCHAR(100) NOT NULL COMMENT '分组名称'," +
+                "created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "INDEX idx_ag_user (user_id)" +
+                ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4");
+        addColumnIfMissing("attachment", "group_id",
+                "ALTER TABLE attachment ADD COLUMN group_id BIGINT NULL AFTER biz_id");
     }
 
     /** 管理端消息表（CREATE TABLE IF NOT EXISTS，幂等） */

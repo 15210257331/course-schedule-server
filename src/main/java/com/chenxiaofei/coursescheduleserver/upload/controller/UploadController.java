@@ -1,5 +1,7 @@
 package com.chenxiaofei.coursescheduleserver.upload.controller;
 
+import com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment;
+import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
@@ -29,9 +31,21 @@ public class UploadController {
     private static final long MAX_SIZE = 2 * 1024 * 1024;
 
     private final Path uploadDir;
+    private final AttachmentService attachmentService;
 
-    public UploadController(@Value("${app.upload-dir:./uploads}") String uploadDir) {
+    public UploadController(@Value("${app.upload-dir:./uploads}") String uploadDir,
+                            AttachmentService attachmentService) {
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
+        this.attachmentService = attachmentService;
+    }
+
+    /** 附件上传：不再强制挂到业务对象，缺省作为通用附件入库（附件管理页面统一管理） */
+    @PostMapping("/attachment")
+    public Result<Attachment> attachment(@RequestParam("file") MultipartFile file,
+                                         @RequestParam(value = "bizType", required = false) String bizType,
+                                         @RequestParam(value = "bizId", required = false) Long bizId,
+                                         @RequestParam(value = "groupId", required = false) Long groupId) {
+        return Result.ok(attachmentService.upload(bizType, bizId, groupId, file));
     }
 
     @PostMapping("/avatar")

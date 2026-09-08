@@ -4,7 +4,10 @@
 <mapper namespace="com.chenxiaofei.coursescheduleserver.coursetemplate.mapper.CourseTemplateMapper">
 
     <sql id="templateWithNames">
-        SELECT t.*, t.student_name AS student_name, o.name AS organization_name
+        SELECT t.*,
+               (SELECT COUNT(*) FROM attachment a
+                 WHERE a.user_id = t.user_id AND a.biz_type = 'template' AND a.biz_id = t.id) AS attachment_count,
+               o.name AS organization_name
         FROM course_template t
         LEFT JOIN organization o ON o.id = t.organization_id
     </sql>
@@ -53,17 +56,17 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO course_template(user_id, title, name, student_id, student_name, organization_id, subject, stage, course_type,
-        duration_minutes, fee, fee_manual, location, note, color, repeat_type)
-        VALUES(#{userId}, #{title}, #{name}, #{studentId}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
-        #{durationMinutes}, #{fee}, #{feeManual}, #{location}, #{note}, #{color}, #{repeatType})
+        INSERT INTO course_template(user_id, title, student_name, organization_id, subject, stage, course_type,
+        duration_minutes, fee, location, note, repeat_type)
+        VALUES(#{userId}, #{title}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
+        #{durationMinutes}, #{fee}, #{location}, #{note}, #{repeatType})
     </insert>
 
     <update id="update">
-        UPDATE course_template SET title = #{title}, name = #{name}, student_id = #{studentId}, student_name = #{studentName},
+        UPDATE course_template SET title = #{title}, student_name = #{studentName},
         organization_id = #{organizationId}, subject = #{subject}, stage = #{stage}, course_type = #{courseType},
-        duration_minutes = #{durationMinutes}, fee = #{fee}, fee_manual = #{feeManual},
-        location = #{location}, note = #{note}, color = #{color}, repeat_type = #{repeatType}
+        duration_minutes = #{durationMinutes}, fee = #{fee},
+        location = #{location}, note = #{note}, repeat_type = #{repeatType}
         WHERE id = #{id} AND user_id = #{userId}
     </update>
 

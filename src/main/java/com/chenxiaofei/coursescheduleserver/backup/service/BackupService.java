@@ -88,7 +88,6 @@ public class BackupService {
             if (t.getOrganizationId() != null) {
                 t.setOrganizationId(orgIdMap.getOrDefault(t.getOrganizationId(), t.getOrganizationId()));
             }
-            t.setStudentId(null);
             templateMapper.insert(t);
             if (oldId != null) {
                 tplIdMap.put(oldId, t.getId());
@@ -103,7 +102,6 @@ public class BackupService {
             if (c.getOrganizationId() != null) {
                 c.setOrganizationId(orgIdMap.getOrDefault(c.getOrganizationId(), c.getOrganizationId()));
             }
-            c.setStudentId(null);
             courseMapper.insert(c);
             if (oldId != null) {
                 courseIdMap.put(oldId, c.getId());

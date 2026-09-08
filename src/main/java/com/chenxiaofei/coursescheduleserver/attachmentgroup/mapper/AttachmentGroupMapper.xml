@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.attachmentgroup.mapper.AttachmentGroupMapper">
+
+    <select id="listByUser" resultType="com.chenxiaofei.coursescheduleserver.attachmentgroup.entity.AttachmentGroup">
+        SELECT * FROM attachment_group
+        WHERE user_id = #{userId}
+        ORDER BY id DESC
+    </select>
+
+    <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.attachmentgroup.entity.AttachmentGroup">
+        SELECT * FROM attachment_group
+        WHERE id = #{id} AND user_id = #{userId}
+    </select>
+
+    <select id="countByName" resultType="int">
+        SELECT COUNT(*) FROM attachment_group
+        WHERE user_id = #{userId} AND name = #{name}
+        <if test="excludeId != null">AND id != #{excludeId}</if>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO attachment_group(user_id, name)
+        VALUES(#{userId}, #{name})
+    </insert>
+
+    <update id="update">
+        UPDATE attachment_group SET name = #{name} WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM attachment_group WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <delete id="deleteAllByUser">
+        DELETE FROM attachment_group WHERE user_id = #{userId}
+    </delete>
+
+</mapper>

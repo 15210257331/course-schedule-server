@@ -39,13 +39,13 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO organization(user_id, name, contact_name, contact_phone, address, default_fee, color, remark)
-        VALUES(#{userId}, #{name}, #{contactName}, #{contactPhone}, #{address}, #{defaultFee}, #{color}, #{remark})
+        INSERT INTO organization(user_id, name, contact_name, contact_phone, address, color, remark)
+        VALUES(#{userId}, #{name}, #{contactName}, #{contactPhone}, #{address}, #{color}, #{remark})
     </insert>
 
     <update id="update">
         UPDATE organization SET name = #{name}, contact_name = #{contactName},
-        contact_phone = #{contactPhone}, address = #{address}, default_fee = #{defaultFee},
+        contact_phone = #{contactPhone}, address = #{address},
         color = #{color}, remark = #{remark} WHERE id = #{id} AND user_id = #{userId}
     </update>
 

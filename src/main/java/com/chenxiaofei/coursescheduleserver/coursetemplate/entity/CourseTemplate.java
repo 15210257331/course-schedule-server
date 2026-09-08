@@ -11,9 +11,6 @@ public class CourseTemplate {
     private Long id;
     private Long userId;
     private String title;
-    /** 记录用（不展示）：学生姓名 + 课程类型 + 学段 */
-    private String name;
-    private Long studentId;
     private String studentName;
     private Long organizationId;
     private String subject;
@@ -22,15 +19,15 @@ public class CourseTemplate {
     private String courseType;
     private Integer durationMinutes;
     private BigDecimal fee;
-    private Boolean feeManual;
     private String location;
     private String note;
-    private String color;
-    /** 拖入日历时的重复规则：daily/weekly，NULL 不重复（daily 排到本月底，weekly 排到本月末） */
     private String repeatType;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     /** 联表冗余字段 */
     private String organizationName;
+
+    /** 附件数量（联表子查询，仅列表返回，用于标识是否有附件） */
+    private Integer attachmentCount;
 }

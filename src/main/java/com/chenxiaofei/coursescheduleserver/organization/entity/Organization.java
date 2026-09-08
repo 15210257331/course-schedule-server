@@ -2,7 +2,6 @@ package com.chenxiaofei.coursescheduleserver.organization.entity;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -14,7 +13,6 @@ public class Organization {
     private String contactName;
     private String contactPhone;
     private String address;
-    private BigDecimal defaultFee;
     private String color;
     private String remark;
     private LocalDateTime createdAt;

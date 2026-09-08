@@ -12,7 +12,6 @@ public class Course {
     private Long id;
     private Long userId;
     private String title;
-    private Long studentId;
     private String studentName;
     private Long organizationId;
     private String subject;
@@ -22,7 +21,6 @@ public class Course {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private BigDecimal fee;
-    private Boolean feeManual;
     private String location;
     private String note;
     private String status;

@@ -13,7 +13,6 @@ public class CourseTemplateRequest {
     @NotBlank(message = "模板标题不能为空")
     private String title;
 
-    private Long studentId;
     private String studentName;
     private Long organizationId;
     private String subject;
@@ -25,10 +24,8 @@ public class CourseTemplateRequest {
     private Integer durationMinutes;
 
     private BigDecimal fee;
-    private Boolean feeManual;
     private String location;
     private String note;
-    private String color;
     /** 拖入日历时的重复规则：daily/weekly，NULL 不重复 */
     private String repeatType;
     /** 编辑模板时是否同步到已排课程 */

@@ -27,7 +27,6 @@ CREATE TABLE IF NOT EXISTS organization (
     contact_name  VARCHAR(50),
     contact_phone VARCHAR(20),
     address       VARCHAR(255),
-    default_fee   DECIMAL(10, 2),
     color         VARCHAR(20),
     remark        VARCHAR(500),
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -39,7 +38,6 @@ CREATE TABLE IF NOT EXISTS course (
     id                       BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id                  BIGINT       NOT NULL,
     title                    VARCHAR(100) NOT NULL,
-    student_id               BIGINT,
     student_name             VARCHAR(50),
     organization_id          BIGINT,
     subject                  VARCHAR(50),
@@ -48,7 +46,6 @@ CREATE TABLE IF NOT EXISTS course (
     start_time               DATETIME     NOT NULL,
     end_time                 DATETIME     NOT NULL,
     fee                      DECIMAL(10, 2),
-    fee_manual               TINYINT DEFAULT 0,
     location                 VARCHAR(200),
     note                     VARCHAR(800),
     status                   VARCHAR(20) DEFAULT 'scheduled',
@@ -69,8 +66,6 @@ CREATE TABLE IF NOT EXISTS course_template (
     id                BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id           BIGINT       NOT NULL,
     title             VARCHAR(100) NOT NULL,
-    name              VARCHAR(200) COMMENT '记录用（不展示）：学生姓名 课程类型 学段',
-    student_id        BIGINT,
     student_name      VARCHAR(50),
     organization_id   BIGINT,
     subject           VARCHAR(50),
@@ -78,18 +73,13 @@ CREATE TABLE IF NOT EXISTS course_template (
     course_type       VARCHAR(50),
     duration_minutes  INT          NOT NULL DEFAULT 60,
     fee               DECIMAL(10, 2),
-    fee_manual        TINYINT DEFAULT 0,
     location          VARCHAR(200),
     note              VARCHAR(800),
-    color             VARCHAR(20) DEFAULT '#635bff',
     repeat_type       VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则：daily/weekly/biweekly，NULL 不重复',
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_tpl_user (user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
-
--- 2026-08-30 增补：模板重复规则（已建表环境执行）
--- ALTER TABLE course_template ADD COLUMN repeat_type VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则' AFTER color;
 
 CREATE TABLE IF NOT EXISTS notification (
     id         BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -150,4 +140,31 @@ CREATE TABLE IF NOT EXISTS admin_message_read (
     user_id    BIGINT NOT NULL,
     read_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_msg_user (message_id, user_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- ========== 附件 ==========
+
+-- 附件分组：用户自定义的附件归类容器
+CREATE TABLE IF NOT EXISTS attachment_group (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id    BIGINT       NOT NULL,
+    name       VARCHAR(100) NOT NULL COMMENT '分组名称',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_ag_user (user_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- 附件：资源文件元数据（可归入用户自定义分组）
+CREATE TABLE IF NOT EXISTS attachment (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id    BIGINT NOT NULL,
+    group_id   BIGINT COMMENT '附件分组 id（附件管理页自定义分组），未分组为 null',
+    biz_type   VARCHAR(20) NOT NULL COMMENT '业务类型：template / general（预留扩展）',
+    biz_id     BIGINT NOT NULL COMMENT '业务对象 id（0 表示未关联）',
+    file_name  VARCHAR(255) NOT NULL COMMENT '原始文件名',
+    file_path  VARCHAR(255) NOT NULL COMMENT '相对路径 /uploads/attachment/...',
+    file_size  BIGINT COMMENT '字节数',
+    mime_type  VARCHAR(100) COMMENT 'MIME 类型',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_attachment_biz (user_id, biz_type, biz_id),
+    INDEX idx_attachment_group (user_id, group_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
