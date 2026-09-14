@@ -4,6 +4,7 @@ import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.course.dto.CoursePageRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
+import com.chenxiaofei.coursescheduleserver.course.dto.CopyWeekResult;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
@@ -138,40 +139,53 @@ public class CourseService {
         return get(id);
     }
 
-    /** 复制指定周（如：下周）的全部课程（跳过已结束课程，并做目标周冲突校验） */
+    /**
+     * 复制指定周的全部课程到目标周。
+     * sourceMonday 为空时默认取本周周一；targetWeek 为相对该源周往前/后的偏移量（1=下一周）。
+     * 已结束的课程也一并复制（用户可能想延续排课）；仅跳过重复系列课与目标时段冲突的课。
+     * 返回复制数 + 各类跳过数，供前端给出「已复制 N 节，跳过 M 节」提示。
+     */
     @Transactional
-    public int copyWeekTo(int targetWeek) {
+    public CopyWeekResult copyWeekTo(String sourceMondayStr, int targetWeek) {
         Long userId = UserContext.getUserId();
-        LocalDate today = LocalDate.now();
-        LocalDate monday = today.with(DayOfWeek.MONDAY);
-        LocalDate targetMonday = monday.plusWeeks(targetWeek);
-        long days = Duration.between(monday.atStartOfDay(), targetMonday.atStartOfDay()).toDays();
+        LocalDate sourceMonday = parseMonday(sourceMondayStr);
+        LocalDate targetMonday = sourceMonday.plusWeeks(targetWeek);
+        long days = Duration.between(sourceMonday.atStartOfDay(), targetMonday.atStartOfDay()).toDays();
 
         List<Course> sources = courseMapper.listInRange(userId,
-                monday.atTime(LocalTime.MIN), monday.plusDays(7).atTime(LocalTime.MIN), null);
-        int count = 0;
+                sourceMonday.atTime(LocalTime.MIN), sourceMonday.plusDays(7).atTime(LocalTime.MIN), null);
+        CopyWeekResult result = new CopyWeekResult();
         for (Course src : sources) {
             // 重复系列由模板/手动重复生成源，不参与整周复制，避免重复叠加
             if (src.getRepeatType() != null && !src.getRepeatType().isBlank()) {
-                continue;
-            }
-            // 已结束的课程不复刻到下周
-            if (src.getEndTime().isBefore(LocalDateTime.now())) {
+                result.setSkippedRepeat(result.getSkippedRepeat() + 1);
                 continue;
             }
             LocalDateTime newStart = src.getStartTime().plusDays(days);
             LocalDateTime newEnd = src.getEndTime().plusDays(days);
             // 目标时段已有课则跳过，避免整周重叠
             if (courseMapper.countConflict(userId, newStart, newEnd) > 0) {
+                result.setSkippedConflict(result.getSkippedConflict() + 1);
                 continue;
             }
             CourseRequest req = toRequest(src);
             req.setStartTime(newStart);
             req.setEndTime(newEnd);
             courseMapper.insert(buildFrom(req, userId, src.getFee()));
-            count++;
+            result.setCopied(result.getCopied() + 1);
         }
-        return count;
+        return result;
+    }
+
+    private LocalDate parseMonday(String sourceMondayStr) {
+        if (sourceMondayStr != null && !sourceMondayStr.isBlank()) {
+            try {
+                LocalDate parsed = LocalDate.parse(sourceMondayStr.trim());
+                return parsed.with(DayOfWeek.MONDAY);
+            } catch (Exception ignored) {
+            }
+        }
+        return LocalDate.now().with(DayOfWeek.MONDAY);
     }
 
     private void handleRepeatAfter(Course c, CourseRequest request) {

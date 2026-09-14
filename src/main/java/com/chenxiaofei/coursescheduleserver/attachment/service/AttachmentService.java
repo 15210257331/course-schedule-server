@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 附件：文件落盘 + 元数据记录。文件存 uploads/attachment/{userId}/ 下，按用户隔离。
+ * 附件：挂在课程模板（学生）下的资源文件。文件存 uploads/attachment/{userId}/ 下，按用户隔离。
  */
 @Service
 public class AttachmentService {
@@ -37,13 +37,9 @@ public class AttachmentService {
         this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
     }
 
-    public List<Attachment> list(String bizType, Long bizId) {
-        return mapper.listByBiz(UserContext.getUserId(), bizType, bizId);
-    }
-
-    /** 当前用户全部附件（附件管理页面用，跨业务对象） */
-    public List<Attachment> listAll() {
-        return mapper.listByUser(UserContext.getUserId());
+    /** 某课程模板下的附件列表 */
+    public List<Attachment> list(Long templateId) {
+        return mapper.listByTemplate(UserContext.getUserId(), templateId);
     }
 
     public Attachment get(Long id) {
@@ -55,7 +51,7 @@ public class AttachmentService {
     }
 
     @Transactional
-    public Attachment upload(String bizType, Long bizId, Long groupId, MultipartFile file) {
+    public Attachment upload(Long templateId, MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "请选择要上传的文件");
         }
@@ -78,10 +74,7 @@ public class AttachmentService {
 
             Attachment a = new Attachment();
             a.setUserId(userId);
-            // bizType / bizId 缺省时作为「未关联业务对象」的通用附件入库
-            a.setBizType(bizType == null || bizType.isBlank() ? "general" : bizType);
-            a.setBizId(bizId == null ? 0L : bizId);
-            a.setGroupId(groupId);
+            a.setTemplateId(templateId);
             a.setFileName(sanitizeFileName(original));
             a.setFilePath("/uploads/attachment/" + userId + "/" + stored);
             a.setFileSize(file.getSize());
@@ -91,25 +84,6 @@ public class AttachmentService {
         } catch (IOException e) {
             throw new BusinessException(500, "文件保存失败：" + e.getMessage());
         }
-    }
-
-    /** 移动附件到指定分组（groupId 为 null 表示移出分组） */
-    @Transactional
-    public void updateGroup(Long id, Long groupId) {
-        get(id);
-        mapper.updateGroup(id, UserContext.getUserId(), groupId);
-    }
-
-    /** 删除某分组下的全部附件（含磁盘文件，分组删除级联用） */
-    @Transactional
-    public void deleteByGroup(Long groupId) {
-        Long userId = UserContext.getUserId();
-        for (Attachment a : mapper.listByUser(userId)) {
-            if (groupId.equals(a.getGroupId())) {
-                deleteFile(a);
-            }
-        }
-        mapper.deleteByGroup(userId, groupId);
     }
 
     /** 解析磁盘绝对路径（供下载与删除） */
@@ -129,14 +103,14 @@ public class AttachmentService {
         mapper.delete(id, UserContext.getUserId());
     }
 
-    /** 删除业务对象（模板）时级联清理其附件 */
+    /** 删除课程模板时级联清理其全部附件（含磁盘文件） */
     @Transactional
-    public void deleteByBiz(String bizType, Long bizId) {
+    public void deleteByTemplate(Long templateId) {
         Long userId = UserContext.getUserId();
-        for (Attachment a : mapper.listByBiz(userId, bizType, bizId)) {
+        for (Attachment a : mapper.listByTemplate(userId, templateId)) {
             deleteFile(a);
         }
-        mapper.deleteByBiz(userId, bizType, bizId);
+        mapper.deleteByTemplate(userId, templateId);
     }
 
     private void deleteFile(Attachment a) {

@@ -4,10 +4,12 @@ import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.course.dto.CoursePageRequest;
+import com.chenxiaofei.coursescheduleserver.course.dto.CopyWeekResult;
 import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.MoveCourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.service.CourseService;
+import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -57,29 +59,36 @@ public class CourseController {
     }
 
     @PostMapping
+    @OperationLog(module = "course", action = "CREATE", detail = "{#request.title}")
     public Result<Course> create(@Valid @RequestBody CourseRequest request) {
         return Result.ok(courseService.create(request));
     }
 
     @PutMapping("/{id}")
+    @OperationLog(module = "course", action = "UPDATE")
     public Result<Course> update(@PathVariable Long id, @Valid @RequestBody CourseRequest request) {
         return Result.ok(courseService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @OperationLog(module = "course", action = "DELETE")
     public Result<Void> delete(@PathVariable Long id) {
         courseService.delete(id);
         return Result.ok();
     }
 
     @PutMapping("/{id}/move")
+    @OperationLog(module = "course", action = "MOVE")
     public Result<Course> move(@PathVariable Long id, @RequestBody MoveCourseRequest request) {
         return Result.ok(courseService.move(id, request.getStartTime(), request.getEndTime()));
     }
 
     @PostMapping("/copy-week")
-    public Result<Integer> copyWeek(@RequestBody Map<String, Integer> body) {
-        int week = body.getOrDefault("week", 1);
-        return Result.ok(courseService.copyWeekTo(week));
+    @OperationLog(module = "course", action = "COPY_WEEK")
+    public Result<CopyWeekResult> copyWeek(@RequestBody Map<String, Object> body) {
+        Object src = body.get("sourceMonday");
+        String sourceMonday = src == null ? null : String.valueOf(src);
+        int week = body.get("week") == null ? 1 : Integer.parseInt(String.valueOf(body.get("week")));
+        return Result.ok(courseService.copyWeekTo(sourceMonday, week));
     }
 }

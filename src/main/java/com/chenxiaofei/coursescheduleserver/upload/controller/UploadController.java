@@ -39,13 +39,11 @@ public class UploadController {
         this.attachmentService = attachmentService;
     }
 
-    /** 附件上传：不再强制挂到业务对象，缺省作为通用附件入库（附件管理页面统一管理） */
+    /** 附件上传：挂到课程模板（学生）下 */
     @PostMapping("/attachment")
     public Result<Attachment> attachment(@RequestParam("file") MultipartFile file,
-                                         @RequestParam(value = "bizType", required = false) String bizType,
-                                         @RequestParam(value = "bizId", required = false) Long bizId,
-                                         @RequestParam(value = "groupId", required = false) Long groupId) {
-        return Result.ok(attachmentService.upload(bizType, bizId, groupId, file));
+                                         @RequestParam("templateId") Long templateId) {
+        return Result.ok(attachmentService.upload(templateId, file));
     }
 
     @PostMapping("/avatar")

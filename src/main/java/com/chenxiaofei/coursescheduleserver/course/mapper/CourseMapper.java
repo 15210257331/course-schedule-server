@@ -40,8 +40,6 @@ public interface CourseMapper {
     /** 解除课程与模板的关联（模板删除但课程保留时） */
     int clearTemplate(@Param("userId") Long userId, @Param("templateId") Long templateId);
 
-    int deleteAllByUser(@Param("userId") Long userId);
-
     int countConflict(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                       @Param("end") LocalDateTime end);
 
@@ -52,12 +50,6 @@ public interface CourseMapper {
 
     /** 按机构统计课程数（删除保护用） */
     long countByOrganization(@Param("userId") Long userId, @Param("organizationId") Long organizationId);
-
-    /** 该用户全部课程（数据备份导出用，按时间升序） */
-    List<Course> listAllByUser(@Param("userId") Long userId);
-
-    /** 备份导入：回填重复系列父课程 */
-    int updateParent(@Param("id") Long id, @Param("userId") Long userId, @Param("parentId") Long parentId);
 
     /** 到期未结的 scheduled 课程（end_time < now），用于按时间自动结算为 completed */
     List<Course> listExpiredScheduled(@Param("userIds") List<Long> userIds, @Param("now") LocalDateTime now);

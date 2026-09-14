@@ -6,6 +6,7 @@ import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplatePag
 import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplateRequest;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.service.CourseTemplateService;
+import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,16 +48,19 @@ public class CourseTemplateController {
     }
 
     @PostMapping
+    @OperationLog(module = "course_template", action = "CREATE", detail = "{#request.name}")
     public Result<CourseTemplate> create(@Valid @RequestBody CourseTemplateRequest request) {
         return Result.ok(service.create(request));
     }
 
     @PutMapping("/{id}")
+    @OperationLog(module = "course_template", action = "UPDATE")
     public Result<CourseTemplate> update(@PathVariable Long id, @Valid @RequestBody CourseTemplateRequest request) {
         return Result.ok(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @OperationLog(module = "course_template", action = "DELETE")
     public Result<Integer> delete(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
         boolean withCourses = body != null && Boolean.TRUE.equals(body.get("withCourses"));
         if (withCourses) {

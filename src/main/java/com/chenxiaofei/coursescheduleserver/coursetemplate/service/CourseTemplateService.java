@@ -115,7 +115,7 @@ public class CourseTemplateService {
         // 解除已排课程与模板的关联，避免悬空外键
         courseMapper.clearTemplate(userId, id);
         // 级联删除模板附件
-        attachmentService.deleteByBiz("template", id);
+        attachmentService.deleteByTemplate(id);
         mapper.delete(id, userId);
     }
 
@@ -127,7 +127,7 @@ public class CourseTemplateService {
         List<Course> courses = courseMapper.listByTemplate(userId, id);
         courseMapper.deleteByTemplate(userId, id);
         // 级联删除模板附件
-        attachmentService.deleteByBiz("template", id);
+        attachmentService.deleteByTemplate(id);
         mapper.delete(id, userId);
         return courses.size();
     }

@@ -81,17 +81,16 @@ CREATE TABLE IF NOT EXISTS course_template (
     INDEX idx_tpl_user (user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-CREATE TABLE IF NOT EXISTS notification (
+CREATE TABLE IF NOT EXISTS course_message (
     id         BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id    BIGINT NOT NULL,
-    type       VARCHAR(20),
     title      VARCHAR(100),
     content    VARCHAR(500),
     course_id  BIGINT,
     remind_at  DATETIME,
     is_read    TINYINT DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_notify_user (user_id)
+    INDEX idx_cmsg_user (user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS setting (
@@ -144,27 +143,45 @@ CREATE TABLE IF NOT EXISTS admin_message_read (
 
 -- ========== 附件 ==========
 
--- 附件分组：用户自定义的附件归类容器
-CREATE TABLE IF NOT EXISTS attachment_group (
-    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id    BIGINT       NOT NULL,
-    name       VARCHAR(100) NOT NULL COMMENT '分组名称',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ag_user (user_id)
+-- 操作日志：记录关键写操作（登录 / 管理端操作等），供管理端审计
+CREATE TABLE IF NOT EXISTS operation_log (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT COMMENT '操作人ID（登录失败等场景可为空）',
+    username     VARCHAR(50) COMMENT '操作人用户名',
+    module       VARCHAR(50)  NOT NULL COMMENT '模块：auth/course/teacher/message/backup...',
+    action       VARCHAR(100) NOT NULL COMMENT '动作：LOGIN/LOGIN_FAIL/CREATE/UPDATE/DELETE/STATUS...',
+    target_id    BIGINT COMMENT '目标对象ID（可为空）',
+    detail       VARCHAR(1000) COMMENT '详情描述',
+    ip           VARCHAR(50) COMMENT '来源IP',
+    success      TINYINT(1) DEFAULT 1 COMMENT '是否成功',
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_oplog_time (created_at),
+    INDEX idx_oplog_user (user_id),
+    INDEX idx_oplog_module (module, action)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- 附件：资源文件元数据（可归入用户自定义分组）
+-- 自动备份：定时任务生成的备份文件记录
+CREATE TABLE IF NOT EXISTS backup_record (
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    file_name    VARCHAR(255) NOT NULL COMMENT '备份文件名',
+    file_path    VARCHAR(500) COMMENT '相对路径或 COS key（失败时为空）',
+    file_size    BIGINT COMMENT '字节数',
+    status       VARCHAR(20) NOT NULL DEFAULT 'success' COMMENT '状态：success/failed',
+    storage_type VARCHAR(20) NOT NULL DEFAULT 'local' COMMENT '存储位置：local/cos',
+    error_msg    VARCHAR(500) COMMENT '失败原因',
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_backup_time (created_at)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- 附件：挂在课程模板（学生）下的资源文件元数据
 CREATE TABLE IF NOT EXISTS attachment (
-    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id    BIGINT NOT NULL,
-    group_id   BIGINT COMMENT '附件分组 id（附件管理页自定义分组），未分组为 null',
-    biz_type   VARCHAR(20) NOT NULL COMMENT '业务类型：template / general（预留扩展）',
-    biz_id     BIGINT NOT NULL COMMENT '业务对象 id（0 表示未关联）',
-    file_name  VARCHAR(255) NOT NULL COMMENT '原始文件名',
-    file_path  VARCHAR(255) NOT NULL COMMENT '相对路径 /uploads/attachment/...',
-    file_size  BIGINT COMMENT '字节数',
-    mime_type  VARCHAR(100) COMMENT 'MIME 类型',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_attachment_biz (user_id, biz_type, biz_id),
-    INDEX idx_attachment_group (user_id, group_id)
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id      BIGINT NOT NULL,
+    template_id  BIGINT COMMENT '所属课程模板 id',
+    file_name    VARCHAR(255) NOT NULL COMMENT '原始文件名',
+    file_path    VARCHAR(255) NOT NULL COMMENT '相对路径 /uploads/attachment/...',
+    file_size    BIGINT COMMENT '字节数',
+    mime_type    VARCHAR(100) COMMENT 'MIME 类型',
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_attachment_tpl (user_id, template_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

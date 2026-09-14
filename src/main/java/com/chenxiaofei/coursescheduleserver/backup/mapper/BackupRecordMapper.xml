@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.backup.mapper.BackupRecordMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO backup_record(file_name, file_path, file_size, status, storage_type, error_msg)
+        VALUES(#{fileName}, #{filePath}, #{fileSize}, #{status}, #{storageType}, #{errorMsg})
+    </insert>
+
+    <select id="listRecent" resultType="com.chenxiaofei.coursescheduleserver.backup.entity.BackupRecord">
+        SELECT * FROM backup_record ORDER BY id DESC LIMIT #{limit}
+    </select>
+
+    <select id="getById" resultType="com.chenxiaofei.coursescheduleserver.backup.entity.BackupRecord">
+        SELECT * FROM backup_record WHERE id = #{id}
+    </select>
+
+</mapper>

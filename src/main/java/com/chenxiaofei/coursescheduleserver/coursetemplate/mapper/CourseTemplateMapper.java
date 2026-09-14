@@ -16,8 +16,6 @@ public interface CourseTemplateMapper {
     List<CourseTemplate> pageByUser(@Param("userId") Long userId, @Param("name") String name,
                                     @Param("offset") long offset, @Param("limit") int limit);
 
-    List<CourseTemplate> listAllByUser(@Param("userId") Long userId);
-
     CourseTemplate findById(@Param("id") Long id, @Param("userId") Long userId);
 
     int countByStudentName(@Param("userId") Long userId, @Param("studentName") String studentName, @Param("excludeId") Long excludeId);
@@ -27,6 +25,4 @@ public interface CourseTemplateMapper {
     int update(CourseTemplate t);
 
     int delete(@Param("id") Long id, @Param("userId") Long userId);
-
-    int deleteAllByUser(@Param("userId") Long userId);
 }

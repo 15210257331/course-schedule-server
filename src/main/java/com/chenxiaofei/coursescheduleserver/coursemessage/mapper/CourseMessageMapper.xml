@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.coursemessage.mapper.CourseMessageMapper">
+
+    <select id="listDue" resultType="com.chenxiaofei.coursescheduleserver.coursemessage.entity.CourseMessage">
+        SELECT * FROM course_message WHERE user_id = #{userId} AND is_read = 0
+        AND remind_at &lt;= #{now} ORDER BY remind_at ASC
+    </select>
+
+    <select id="listRecent" resultType="com.chenxiaofei.coursescheduleserver.coursemessage.entity.CourseMessage">
+        SELECT * FROM course_message WHERE user_id = #{userId} ORDER BY id DESC LIMIT #{limit}
+    </select>
+
+    <insert id="insert">
+        INSERT INTO course_message(user_id, title, content, course_id, remind_at)
+        VALUES(#{userId}, #{title}, #{content}, #{courseId}, #{remindAt})
+    </insert>
+
+    <select id="countByCourse" resultType="int">
+        SELECT COUNT(*) FROM course_message WHERE user_id = #{userId} AND course_id = #{courseId}
+    </select>
+
+    <update id="markRead">
+        UPDATE course_message SET is_read = 1 WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <update id="markAllRead">
+        UPDATE course_message SET is_read = 1 WHERE user_id = #{userId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM course_message WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+</mapper>

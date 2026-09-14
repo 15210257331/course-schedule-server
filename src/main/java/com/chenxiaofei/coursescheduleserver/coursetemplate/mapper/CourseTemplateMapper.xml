@@ -6,7 +6,7 @@
     <sql id="templateWithNames">
         SELECT t.*,
                (SELECT COUNT(*) FROM attachment a
-                 WHERE a.user_id = t.user_id AND a.biz_type = 'template' AND a.biz_id = t.id) AS attachment_count,
+                 WHERE a.user_id = t.user_id AND a.template_id = t.id) AS attachment_count,
                o.name AS organization_name
         FROM course_template t
         LEFT JOIN organization o ON o.id = t.organization_id
@@ -45,10 +45,6 @@
         WHERE t.id = #{id} AND t.user_id = #{userId}
     </select>
 
-    <select id="listAllByUser" resultType="com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate">
-        SELECT * FROM course_template WHERE user_id = #{userId} ORDER BY id ASC
-    </select>
-
     <select id="countByStudentName" resultType="int">
         SELECT COUNT(*) FROM course_template
         WHERE user_id = #{userId} AND student_name = #{studentName}
@@ -72,10 +68,6 @@
 
     <delete id="delete">
         DELETE FROM course_template WHERE id = #{id} AND user_id = #{userId}
-    </delete>
-
-    <delete id="deleteAllByUser">
-        DELETE FROM course_template WHERE user_id = #{userId}
     </delete>
 
 </mapper>

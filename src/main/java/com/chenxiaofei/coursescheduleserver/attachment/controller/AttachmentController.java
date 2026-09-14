@@ -3,6 +3,7 @@ package com.chenxiaofei.coursescheduleserver.attachment.controller;
 import com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment;
 import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
 import com.chenxiaofei.coursescheduleserver.common.Result;
+import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -34,27 +35,12 @@ public class AttachmentController {
         this.service = service;
     }
 
+    /** 某课程模板下的附件列表 */
     @PostMapping("/list")
     public Result<List<Attachment>> list(@RequestBody Map<String, Object> body) {
-        String bizType = (String) body.get("bizType");
-        Object bizId = body.get("bizId");
-        Long bid = bizId == null ? null : Long.valueOf(bizId.toString());
-        return Result.ok(service.list(bizType, bid));
-    }
-
-    /** 当前用户全部附件（附件管理页面，跨业务对象统一展示） */
-    @PostMapping("/list-all")
-    public Result<List<Attachment>> listAll() {
-        return Result.ok(service.listAll());
-    }
-
-    /** 移动附件到分组（groupId 为 null 表示移出分组） */
-    @PostMapping("/move-group")
-    public Result<Void> moveGroup(@RequestBody Map<String, Long> body) {
-        Long id = body.get("id");
-        Long groupId = body.get("groupId");
-        service.updateGroup(id, groupId);
-        return Result.ok();
+        Object templateId = body.get("templateId");
+        Long tid = templateId == null ? null : Long.valueOf(templateId.toString());
+        return Result.ok(service.list(tid));
     }
 
     /** 下载：返回文件流，Content-Disposition 带原始文件名（UTF-8 编码支持中文名） */
@@ -77,6 +63,7 @@ public class AttachmentController {
     }
 
     @DeleteMapping("/{id}")
+    @OperationLog(module = "attachment", action = "DELETE")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return Result.ok();

@@ -6,6 +6,7 @@ import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationPageReq
 import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationRequest;
 import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
 import com.chenxiaofei.coursescheduleserver.organization.service.OrganizationService;
+import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,16 +48,19 @@ public class OrganizationController {
     }
 
     @PostMapping
+    @OperationLog(module = "organization", action = "CREATE", detail = "{#request.name}")
     public Result<Organization> create(@Valid @RequestBody OrganizationRequest request) {
         return Result.ok(service.create(request));
     }
 
     @PutMapping("/{id}")
+    @OperationLog(module = "organization", action = "UPDATE")
     public Result<Organization> update(@PathVariable Long id, @Valid @RequestBody OrganizationRequest request) {
         return Result.ok(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @OperationLog(module = "organization", action = "DELETE")
     public Result<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return Result.ok();

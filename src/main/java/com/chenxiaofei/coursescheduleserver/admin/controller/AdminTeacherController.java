@@ -7,6 +7,7 @@ import com.chenxiaofei.coursescheduleserver.admin.service.AdminTeacherService;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
+import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import com.chenxiaofei.coursescheduleserver.security.AdminGuard;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,6 +44,7 @@ public class AdminTeacherController {
     }
 
     @PostMapping("/status")
+    @OperationLog(module = "teacher", action = "STATUS")
     public Result<Void> updateStatus(@RequestBody TeacherStatusRequest request) {
         adminGuard.requireAdmin();
         service.updateStatus(request);
@@ -50,6 +52,7 @@ public class AdminTeacherController {
     }
 
     @PostMapping("/reset-password")
+    @OperationLog(module = "teacher", action = "RESET_PASSWORD")
     public Result<Void> resetPassword(@RequestBody Map<String, Long> body) {
         adminGuard.requireAdmin();
         service.resetPassword(body.get("id"));

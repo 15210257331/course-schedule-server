@@ -16,8 +16,4 @@
         ON DUPLICATE KEY UPDATE setting_value = #{value}
     </insert>
 
-    <delete id="deleteAllByUser">
-        DELETE FROM setting WHERE user_id = #{userId}
-    </delete>
-
 </mapper>

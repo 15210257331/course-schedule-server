@@ -81,10 +81,6 @@
         UPDATE course SET template_id = NULL WHERE user_id = #{userId} AND template_id = #{templateId}
     </update>
 
-    <delete id="deleteAllByUser">
-        DELETE FROM course WHERE user_id = #{userId}
-    </delete>
-
     <select id="countConflict" resultType="int">
         SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND status = 'scheduled'
         AND start_time &lt; #{end} AND end_time &gt; #{start}
@@ -102,14 +98,6 @@
     <select id="countByOrganization" resultType="long">
         SELECT COUNT(*) FROM course WHERE user_id = #{userId} AND organization_id = #{organizationId}
     </select>
-
-    <select id="listAllByUser" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
-        SELECT * FROM course WHERE user_id = #{userId} ORDER BY parent_id ASC, start_time ASC
-    </select>
-
-    <update id="updateParent">
-        UPDATE course SET parent_id = #{parentId} WHERE id = #{id} AND user_id = #{userId}
-    </update>
 
     <select id="listExpiredScheduled" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
         SELECT * FROM course WHERE status = 'scheduled' AND end_time &lt; #{now}

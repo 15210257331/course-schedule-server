@@ -7,6 +7,7 @@ import com.chenxiaofei.coursescheduleserver.admin.service.AdminMessageService;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
+import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import com.chenxiaofei.coursescheduleserver.security.AdminGuard;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,18 +45,21 @@ public class AdminMessageController {
     }
 
     @PostMapping
+    @OperationLog(module = "message", action = "CREATE")
     public Result<AdminMessage> create(@RequestBody AdminMessageRequest request) {
         adminGuard.requireAdmin();
         return Result.ok(service.create(request));
     }
 
     @PostMapping("/update")
+    @OperationLog(module = "message", action = "UPDATE")
     public Result<AdminMessage> update(@RequestBody AdminMessageRequest request) {
         adminGuard.requireAdmin();
         return Result.ok(service.update(request.getId(), request));
     }
 
     @PostMapping("/revoke")
+    @OperationLog(module = "message", action = "REVOKE")
     public Result<Void> revoke(@RequestBody Map<String, Long> body) {
         adminGuard.requireAdmin();
         service.revoke(body.get("id"));
@@ -63,6 +67,7 @@ public class AdminMessageController {
     }
 
     @PostMapping("/publish")
+    @OperationLog(module = "message", action = "PUBLISH")
     public Result<Void> publish(@RequestBody Map<String, Long> body) {
         adminGuard.requireAdmin();
         service.publish(body.get("id"));
@@ -70,6 +75,7 @@ public class AdminMessageController {
     }
 
     @PostMapping("/delete")
+    @OperationLog(module = "message", action = "DELETE")
     public Result<Void> delete(@RequestBody Map<String, Long> body) {
         adminGuard.requireAdmin();
         service.delete(body.get("id"));

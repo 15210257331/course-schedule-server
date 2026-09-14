@@ -1,6 +1,7 @@
 package com.chenxiaofei.coursescheduleserver.auth.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.common.IpUtil;
 import com.chenxiaofei.coursescheduleserver.auth.dto.LoginRequest;
 import com.chenxiaofei.coursescheduleserver.auth.dto.LoginResponse;
 import com.chenxiaofei.coursescheduleserver.auth.dto.PasswordUpdateRequest;
@@ -10,6 +11,8 @@ import com.chenxiaofei.coursescheduleserver.auth.dto.ResetPasswordRequest;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import com.chenxiaofei.coursescheduleserver.mail.MailService;
+import com.chenxiaofei.coursescheduleserver.operationlog.entity.OperationLog;
+import com.chenxiaofei.coursescheduleserver.operationlog.service.OperationLogService;
 import com.chenxiaofei.coursescheduleserver.security.JwtUtil;
 import org.mindrot.jbcrypt.BCrypt;
 import org.springframework.stereotype.Service;
@@ -21,24 +24,57 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final CaptchaStore captchaStore;
     private final MailService mailService;
+    private final LoginAttemptGuard loginAttemptGuard;
+    private final OperationLogService operationLogService;
 
-    public AuthService(UserMapper userMapper, JwtUtil jwtUtil, CaptchaStore captchaStore, MailService mailService) {
+    public AuthService(UserMapper userMapper, JwtUtil jwtUtil, CaptchaStore captchaStore, MailService mailService,
+                       LoginAttemptGuard loginAttemptGuard, OperationLogService operationLogService) {
         this.userMapper = userMapper;
         this.jwtUtil = jwtUtil;
         this.captchaStore = captchaStore;
         this.mailService = mailService;
+        this.loginAttemptGuard = loginAttemptGuard;
+        this.operationLogService = operationLogService;
     }
 
     public LoginResponse login(LoginRequest request) {
-        User user = userMapper.findByUsername(request.getUsername());
+        String username = request.getUsername() == null ? null : request.getUsername().trim();
+        String ip = IpUtil.resolveIp();
+
+        // 防暴力破解：锁定期间直接拒绝
+        loginAttemptGuard.check(username, ip);
+
+        User user = userMapper.findByUsername(username);
         if (user == null || !BCrypt.checkpw(request.getPassword(), user.getPassword())) {
+            loginAttemptGuard.onFailure(username, ip);
+            recordLogin(username, "LOGIN_FAIL", false, "用户名或密码错误", ip);
             throw new BusinessException(401, "用户名或密码错误");
         }
         if ("disabled".equals(user.getStatus())) {
+            loginAttemptGuard.onFailure(username, ip);
+            recordLogin(username, "LOGIN_FAIL", false, "账号已被禁用", ip);
             throw new BusinessException(403, "账号已被禁用，请联系管理员");
         }
+        loginAttemptGuard.onSuccess(username, ip);
         userMapper.updateLastLoginAt(user.getId());
+        recordLogin(username, "LOGIN", true, null, ip);
         return buildResponse(user);
+    }
+
+    /** 记录登录日志（登录前无 UserContext，需手动写入用户名） */
+    private void recordLogin(String username, String action, boolean success, String failMsg, String ip) {
+        try {
+            OperationLog log = new OperationLog();
+            log.setUsername(username);
+            log.setModule("auth");
+            log.setAction(action);
+            log.setDetail(failMsg);
+            log.setIp(ip);
+            log.setSuccess(success);
+            operationLogService.record(log);
+        } catch (Exception e) {
+            // 登录日志写入失败不影响登录流程
+        }
     }
 
     public LoginResponse register(RegisterRequest request) {

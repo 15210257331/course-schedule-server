@@ -34,10 +34,6 @@
         SELECT * FROM organization WHERE id = #{id} AND user_id = #{userId}
     </select>
 
-    <select id="listAllByUser" resultType="com.chenxiaofei.coursescheduleserver.organization.entity.Organization">
-        SELECT * FROM organization WHERE user_id = #{userId} ORDER BY id ASC
-    </select>
-
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO organization(user_id, name, contact_name, contact_phone, address, color, remark)
         VALUES(#{userId}, #{name}, #{contactName}, #{contactPhone}, #{address}, #{color}, #{remark})
@@ -51,10 +47,6 @@
 
     <delete id="delete">
         DELETE FROM organization WHERE id = #{id} AND user_id = #{userId}
-    </delete>
-
-    <delete id="deleteAllByUser">
-        DELETE FROM organization WHERE user_id = #{userId}
     </delete>
 
 </mapper>

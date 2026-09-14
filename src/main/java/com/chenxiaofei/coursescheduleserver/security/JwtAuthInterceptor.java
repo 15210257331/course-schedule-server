@@ -34,7 +34,8 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             Claims claims = jwtUtil.parse(token);
             Long userId = Long.valueOf(claims.getSubject());
             String role = claims.get("role", String.class);
-            UserContext.set(userId, role);
+            String nickname = claims.get("nickname", String.class);
+            UserContext.set(userId, role, nickname);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             throw new BusinessException(401, "登录状态无效，请重新登录");

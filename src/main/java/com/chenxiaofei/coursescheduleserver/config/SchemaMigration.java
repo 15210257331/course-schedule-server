@@ -51,20 +51,111 @@ public class SchemaMigration implements CommandLineRunner {
                 "ALTER TABLE `user` ADD COLUMN last_login_at DATETIME NULL AFTER disabled_at");
         migrateCourseType();
         createAdminTables();
-        createAttachmentGroupTables();
+        createAuditTables();
+        dropLegacyNotificationTable();
+        migrateAttachmentToTemplate();
     }
 
-    /** 附件分组表 + attachment.group_id 列（幂等） */
-    private void createAttachmentGroupTables() {
-        jdbc.execute("CREATE TABLE IF NOT EXISTS attachment_group (" +
+    /**
+     * 重命名遗留表：旧 {@code notification} 表带 type 字段，已重构为
+     * {@code course_message}（去掉 type，只存课程提醒）。旧表与数据不再保留，
+     * 启动时幂等删除（course_message 表已由 schema.sql 建出）。
+     */
+    private void dropLegacyNotificationTable() {
+        List<String> tables = jdbc.queryForList(
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                String.class, "notification");
+        if (tables.isEmpty()) {
+            return;
+        }
+        try {
+            jdbc.execute("DROP TABLE `notification`");
+            log.info("迁移完成：已删除遗留 notification 表（已由 course_message 取代）");
+        } catch (Exception e) {
+            log.warn("删除遗留 notification 表失败：{}", e.getMessage());
+        }
+    }
+
+    /** 操作日志 + 自动备份记录表（CREATE TABLE IF NOT EXISTS，幂等） */
+    private void createAuditTables() {
+        jdbc.execute("CREATE TABLE IF NOT EXISTS operation_log (" +
                 "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
-                "user_id BIGINT NOT NULL," +
-                "name VARCHAR(100) NOT NULL COMMENT '分组名称'," +
+                "user_id BIGINT COMMENT '操作人ID'," +
+                "username VARCHAR(50) COMMENT '操作人用户名'," +
+                "module VARCHAR(50) NOT NULL COMMENT '模块'," +
+                "action VARCHAR(100) NOT NULL COMMENT '动作'," +
+                "target_id BIGINT COMMENT '目标对象ID'," +
+                "detail VARCHAR(1000) COMMENT '详情描述'," +
+                "ip VARCHAR(50) COMMENT '来源IP'," +
+                "success TINYINT(1) DEFAULT 1 COMMENT '是否成功'," +
                 "created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
-                "INDEX idx_ag_user (user_id)" +
+                "INDEX idx_oplog_time (created_at)," +
+                "INDEX idx_oplog_user (user_id)," +
+                "INDEX idx_oplog_module (module, action)" +
                 ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4");
-        addColumnIfMissing("attachment", "group_id",
-                "ALTER TABLE attachment ADD COLUMN group_id BIGINT NULL AFTER biz_id");
+        jdbc.execute("CREATE TABLE IF NOT EXISTS backup_record (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "file_name VARCHAR(255) NOT NULL COMMENT '备份文件名'," +
+                "file_path VARCHAR(500) COMMENT '相对路径或 COS key（失败时为空）'," +
+                "file_size BIGINT COMMENT '字节数'," +
+                "status VARCHAR(20) NOT NULL DEFAULT 'success' COMMENT '状态'," +
+                "error_msg VARCHAR(500) COMMENT '失败原因'," +
+                "created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                "INDEX idx_backup_time (created_at)" +
+                ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4");
+        // 存量表 file_path 原为 NOT NULL，失败备份无路径无法写入，放宽为可空（幂等）
+        relaxColumnNotNull("backup_record", "file_path",
+                "ALTER TABLE backup_record MODIFY COLUMN file_path VARCHAR(500) NULL COMMENT '相对路径或 COS key（失败时为空）'");
+        addColumnIfMissing("backup_record", "storage_type",
+                "ALTER TABLE backup_record ADD COLUMN storage_type VARCHAR(20) NOT NULL DEFAULT 'local' AFTER status");
+    }
+
+    /**
+     * 附件模型重构：从「用户自定义分组 + biz_type/biz_id」收敛为「直接挂到课程模板」。
+     * 旧表若仍有 biz_type 列（旧结构，biz_type NOT NULL 会阻断新 insert），直接 DROP 重建为新结构。
+     * 同时丢弃旧 attachment_group 表（用户已确认附件数据全部清空）。
+     * 幂等：新库由 schema.sql 直接建出新结构，本方法对已是新结构的库无副作用。
+     */
+    private void migrateAttachmentToTemplate() {
+        // 检测旧结构：attachment 表存在且含 biz_type 列 → 旧表，需重建
+        List<String> bizCol = jdbc.queryForList(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'attachment' AND COLUMN_NAME = 'biz_type'",
+                String.class);
+        if (!bizCol.isEmpty()) {
+            try {
+                jdbc.execute("DROP TABLE IF EXISTS `attachment`");
+                jdbc.execute("CREATE TABLE attachment (" +
+                        "id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                        "user_id BIGINT NOT NULL," +
+                        "template_id BIGINT COMMENT '所属课程模板 id'," +
+                        "file_name VARCHAR(255) NOT NULL COMMENT '原始文件名'," +
+                        "file_path VARCHAR(255) NOT NULL COMMENT '相对路径 /uploads/attachment/...'," +
+                        "file_size BIGINT COMMENT '字节数'," +
+                        "mime_type VARCHAR(100) COMMENT 'MIME 类型'," +
+                        "created_at DATETIME DEFAULT CURRENT_TIMESTAMP," +
+                        "INDEX idx_attachment_tpl (user_id, template_id)" +
+                        ") ENGINE = InnoDB DEFAULT CHARSET = utf8mb4");
+                log.info("迁移完成：attachment 表已重建为新结构（挂课程模板，旧 biz_type/group 列丢弃）");
+            } catch (Exception e) {
+                log.warn("重建 attachment 表失败：{}", e.getMessage());
+            }
+        } else {
+            // 新结构或表不存在：若表存在但缺 template_id 列（极少见），补上
+            addColumnIfMissing("attachment", "template_id",
+                    "ALTER TABLE attachment ADD COLUMN template_id BIGINT NULL COMMENT '所属课程模板 id'");
+        }
+        // 删除遗留的 attachment_group 表（用户自定义分组体系已移除）
+        List<String> groups = jdbc.queryForList(
+                "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+                String.class, "attachment_group");
+        if (!groups.isEmpty()) {
+            try {
+                jdbc.execute("DROP TABLE `attachment_group`");
+                log.info("迁移完成：已删除遗留 attachment_group 表（附件改为挂载到课程模板）");
+            } catch (Exception e) {
+                log.warn("删除遗留 attachment_group 表失败：{}", e.getMessage());
+            }
+        }
     }
 
     /** 管理端消息表（CREATE TABLE IF NOT EXISTS，幂等） */
@@ -118,6 +209,20 @@ public class SchemaMigration implements CommandLineRunner {
         } catch (Exception e) {
             // 表还不存在时由 schema.sql 的 CREATE TABLE 建出完整结构，此处静默跳过
             log.warn("迁移跳过（{}.{})：{}", table, column, e.getMessage());
+        }
+    }
+
+    /**
+     * 把指定列从 NOT NULL 放宽为可空（存量表兼容，幂等）。
+     * 用于无法用 CREATE TABLE IF NOT EXISTS 修正约束的情况（如失败记录无 file_path）。
+     */
+    private void relaxColumnNotNull(String table, String column, String ddl) {
+        try {
+            jdbc.execute(ddl);
+            log.info("迁移完成：{}.{} 已放宽为可空", table, column);
+        } catch (Exception e) {
+            // 列已是可空 / 表不存在 / 其他：静默跳过，不影响启动
+            log.debug("放宽 {}.{} 可空跳过：{}", table, column, e.getMessage());
         }
     }
 }

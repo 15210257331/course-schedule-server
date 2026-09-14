@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.operationlog.mapper.OperationLogMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO operation_log(user_id, username, module, action, target_id, detail, ip, success)
+        VALUES(#{userId}, #{username}, #{module}, #{action}, #{targetId}, #{detail}, #{ip}, #{success})
+    </insert>
+
+    <sql id="where">
+        WHERE 1 = 1
+        <if test="module != null and module != ''">
+            AND module = #{module}
+        </if>
+        <if test="action != null and action != ''">
+            AND action = #{action}
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND (username LIKE CONCAT('%', #{keyword}, '%')
+                 OR detail LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+    </sql>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM operation_log
+        <include refid="where"/>
+    </select>
+
+    <select id="page" resultType="com.chenxiaofei.coursescheduleserver.operationlog.entity.OperationLog">
+        SELECT * FROM operation_log
+        <include refid="where"/>
+        ORDER BY id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+</mapper>
