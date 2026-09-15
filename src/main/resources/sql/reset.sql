@@ -23,8 +23,8 @@ DROP TABLE IF EXISTS `course_message`;
 DROP TABLE IF EXISTS `course_template`;
 DROP TABLE IF EXISTS `course`;
 DROP TABLE IF EXISTS `organization`;
-DROP TABLE IF EXISTS `user`;
-
+DROP TABLE IF EXISTS `backup_record`;
+DROP TABLE IF EXISTS `operation_log`;
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ------------------------------------------------------------

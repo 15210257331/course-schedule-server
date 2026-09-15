@@ -28,10 +28,7 @@ TeacherOS · 兼职教师工作台的后端服务，技术栈：Spring Boot + My
 ```bash
 docker build -t course-schedule-server:latest .
 
-docker run -d --name course-schedule-server --restart unless-stopped \
-  -p 9999:8080 \
-  -v /root/web/course-schedule-server/uploads:/app/uploads \
-  course-schedule-server:latest
+docker run -d --name course-schedule-server --restart unless-stopped -p 9999:8080 -v /root/web/course-schedule-server/uploads:/app/uploads -v /root/web/course-schedule-server/backup:/app/backup course-schedule-server:latest
 ```
 
 ## 敏感配置

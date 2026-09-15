@@ -141,8 +141,6 @@ CREATE TABLE IF NOT EXISTS admin_message_read (
     UNIQUE KEY uk_msg_user (message_id, user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- ========== 附件 ==========
-
 -- 操作日志：记录关键写操作（登录 / 管理端操作等），供管理端审计
 CREATE TABLE IF NOT EXISTS operation_log (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
