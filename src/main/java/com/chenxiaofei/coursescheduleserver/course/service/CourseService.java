@@ -56,37 +56,47 @@ public class CourseService {
 
     @Transactional
     public Course create(CourseRequest request) {
-        validateTime(request.getStartTime(), request.getEndTime());
-        checkConflict(request.getStartTime(), request.getEndTime(), null);
+        lockUser();
+        try {
+            validateTime(request.getStartTime(), request.getEndTime());
+            checkConflict(request.getStartTime(), request.getEndTime(), null);
 
-        Course c = new Course();
-        c.setUserId(UserContext.getUserId());
-        apply(c, request);
-        if (c.getStatus() == null) {
-            c.setStatus("scheduled");
-        }
-        if (c.getColor() == null || c.getColor().isBlank()) {
-            c.setColor("#409EFF");
-        }
-        courseMapper.insert(c);
+            Course c = new Course();
+            c.setUserId(UserContext.getUserId());
+            apply(c, request);
+            if (c.getStatus() == null) {
+                c.setStatus("scheduled");
+            }
+            if (c.getColor() == null || c.getColor().isBlank()) {
+                c.setColor("#409EFF");
+            }
+            courseMapper.insert(c);
 
-        handleRepeatAfter(c, request);
-        return get(c.getId());
+            handleRepeatAfter(c, request);
+            return get(c.getId());
+        } finally {
+            unlockUser();
+        }
     }
 
     @Transactional
     public Course update(Long id, CourseRequest request) {
-        Course exist = get(id);
-        validateTime(request.getStartTime(), request.getEndTime());
-        checkConflict(request.getStartTime(), request.getEndTime(), id);
+        lockUser();
+        try {
+            Course exist = get(id);
+            validateTime(request.getStartTime(), request.getEndTime());
+            checkConflict(request.getStartTime(), request.getEndTime(), id);
 
-        Course c = new Course();
-        c.setId(id);
-        c.setUserId(UserContext.getUserId());
-        apply(c, request);
-        c.setStatus(request.getStatus() == null ? exist.getStatus() : request.getStatus());
-        courseMapper.update(c);
-        return get(id);
+            Course c = new Course();
+            c.setId(id);
+            c.setUserId(UserContext.getUserId());
+            apply(c, request);
+            c.setStatus(request.getStatus() == null ? exist.getStatus() : request.getStatus());
+            courseMapper.update(c);
+            return get(id);
+        } finally {
+            unlockUser();
+        }
     }
 
     public void delete(Long id) {
@@ -132,11 +142,16 @@ public class CourseService {
 
     @Transactional
     public Course move(Long id, LocalDateTime newStart, LocalDateTime newEnd) {
-        get(id);
-        validateTime(newStart, newEnd);
-        checkConflict(newStart, newEnd, id);
-        courseMapper.updateTime(id, UserContext.getUserId(), newStart, newEnd);
-        return get(id);
+        lockUser();
+        try {
+            get(id);
+            validateTime(newStart, newEnd);
+            checkConflict(newStart, newEnd, id);
+            courseMapper.updateTime(id, UserContext.getUserId(), newStart, newEnd);
+            return get(id);
+        } finally {
+            unlockUser();
+        }
     }
 
     /**
@@ -147,34 +162,39 @@ public class CourseService {
      */
     @Transactional
     public CopyWeekResult copyWeekTo(String sourceMondayStr, int targetWeek) {
-        Long userId = UserContext.getUserId();
-        LocalDate sourceMonday = parseMonday(sourceMondayStr);
-        LocalDate targetMonday = sourceMonday.plusWeeks(targetWeek);
-        long days = Duration.between(sourceMonday.atStartOfDay(), targetMonday.atStartOfDay()).toDays();
+        lockUser();
+        try {
+            Long userId = UserContext.getUserId();
+            LocalDate sourceMonday = parseMonday(sourceMondayStr);
+            LocalDate targetMonday = sourceMonday.plusWeeks(targetWeek);
+            long days = Duration.between(sourceMonday.atStartOfDay(), targetMonday.atStartOfDay()).toDays();
 
-        List<Course> sources = courseMapper.listInRange(userId,
-                sourceMonday.atTime(LocalTime.MIN), sourceMonday.plusDays(7).atTime(LocalTime.MIN), null);
-        CopyWeekResult result = new CopyWeekResult();
-        for (Course src : sources) {
-            // 重复系列由模板/手动重复生成源，不参与整周复制，避免重复叠加
-            if (src.getRepeatType() != null && !src.getRepeatType().isBlank()) {
-                result.setSkippedRepeat(result.getSkippedRepeat() + 1);
-                continue;
+            List<Course> sources = courseMapper.listInRange(userId,
+                    sourceMonday.atTime(LocalTime.MIN), sourceMonday.plusDays(7).atTime(LocalTime.MIN), null);
+            CopyWeekResult result = new CopyWeekResult();
+            for (Course src : sources) {
+                // 重复系列由模板/手动重复生成源，不参与整周复制，避免重复叠加
+                if (src.getRepeatType() != null && !src.getRepeatType().isBlank()) {
+                    result.setSkippedRepeat(result.getSkippedRepeat() + 1);
+                    continue;
+                }
+                LocalDateTime newStart = src.getStartTime().plusDays(days);
+                LocalDateTime newEnd = src.getEndTime().plusDays(days);
+                // 目标时段已有课则跳过，避免整周重叠
+                if (courseMapper.countConflict(userId, newStart, newEnd) > 0) {
+                    result.setSkippedConflict(result.getSkippedConflict() + 1);
+                    continue;
+                }
+                CourseRequest req = toRequest(src);
+                req.setStartTime(newStart);
+                req.setEndTime(newEnd);
+                courseMapper.insert(buildFrom(req, userId, src.getFee()));
+                result.setCopied(result.getCopied() + 1);
             }
-            LocalDateTime newStart = src.getStartTime().plusDays(days);
-            LocalDateTime newEnd = src.getEndTime().plusDays(days);
-            // 目标时段已有课则跳过，避免整周重叠
-            if (courseMapper.countConflict(userId, newStart, newEnd) > 0) {
-                result.setSkippedConflict(result.getSkippedConflict() + 1);
-                continue;
-            }
-            CourseRequest req = toRequest(src);
-            req.setStartTime(newStart);
-            req.setEndTime(newEnd);
-            courseMapper.insert(buildFrom(req, userId, src.getFee()));
-            result.setCopied(result.getCopied() + 1);
+            return result;
+        } finally {
+            unlockUser();
         }
-        return result;
     }
 
     private LocalDate parseMonday(String sourceMondayStr) {
@@ -320,5 +340,29 @@ public class CourseService {
         if (count > 0) {
             throw new BusinessException(409, "该时间段已存在其他课程，请调整时间");
         }
+    }
+
+    /**
+     * 按 user_id 加 MySQL 会话级 advisory lock，串行化同一教师的课程写操作。
+     * 消除「先 countConflict 再 insert」的 TOCTOU 并发竞态：两个并发请求各自读到 count=0 后都插入重叠课程。
+     * 锁按 user_id 粒度，不同教师互不阻塞；GET_LOCK 是 session 级，连接池复用连接不会自动释放，必须 finally 显式释放。
+     */
+    private void lockUser() {
+        Integer ok = courseMapper.getLock(lockName(), 10);
+        if (ok == null || ok != 1) {
+            throw new BusinessException(409, "操作繁忙，请稍后重试");
+        }
+    }
+
+    private void unlockUser() {
+        try {
+            courseMapper.releaseLock(lockName());
+        } catch (Exception ignored) {
+            // 释放失败不影响业务；锁会在连接归还后由 GET_LOCK 语义自动失效或被下次 GET_LOCK 重置
+        }
+    }
+
+    private String lockName() {
+        return "course:user:" + UserContext.getUserId();
     }
 }

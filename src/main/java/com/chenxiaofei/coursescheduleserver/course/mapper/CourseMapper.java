@@ -3,6 +3,7 @@ package com.chenxiaofei.coursescheduleserver.course.mapper;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -59,4 +60,16 @@ public interface CourseMapper {
 
     /** 批量更新课程状态 */
     int batchUpdateStatus(@Param("ids") List<Long> ids, @Param("status") String status);
+
+    /**
+     * 按 user_id 加 MySQL 会话级 advisory lock，串行化同一教师的课程写操作，
+     * 消除「先 countConflict 再 insert」的 TOCTOU 并发竞态。
+     * 返回 1=加锁成功，0=超时，NULL=出错。
+     */
+    @Select("SELECT GET_LOCK(#{name}, #{timeout})")
+    Integer getLock(@Param("name") String name, @Param("timeout") int timeout);
+
+    /** 释放 {@link #getLock} 获取的锁，返回 1=释放成功 */
+    @Select("SELECT RELEASE_LOCK(#{name})")
+    Integer releaseLock(@Param("name") String name);
 }

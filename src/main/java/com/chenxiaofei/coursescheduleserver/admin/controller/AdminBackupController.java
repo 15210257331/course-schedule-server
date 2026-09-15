@@ -3,6 +3,7 @@ package com.chenxiaofei.coursescheduleserver.admin.controller;
 import com.chenxiaofei.coursescheduleserver.backup.entity.BackupRecord;
 import com.chenxiaofei.coursescheduleserver.backup.mapper.BackupRecordMapper;
 import com.chenxiaofei.coursescheduleserver.backup.service.AutoBackupScheduler;
+import com.chenxiaofei.coursescheduleserver.backup.service.BackupRestoreService;
 import com.chenxiaofei.coursescheduleserver.backup.service.BackupSettingService;
 import com.chenxiaofei.coursescheduleserver.backup.service.CosStorageService;
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
@@ -18,7 +19,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,17 +43,20 @@ public class AdminBackupController {
     private final CosStorageService cosStorageService;
     private final BackupSettingService backupSettingService;
     private final AutoBackupScheduler autoBackupScheduler;
+    private final BackupRestoreService backupRestoreService;
     private final Path localDir;
 
     public AdminBackupController(BackupRecordMapper backupRecordMapper, AdminGuard adminGuard,
                                  CosStorageService cosStorageService, BackupSettingService backupSettingService,
                                  AutoBackupScheduler autoBackupScheduler,
+                                 BackupRestoreService backupRestoreService,
                                  BackupProperties backupProperties) {
         this.backupRecordMapper = backupRecordMapper;
         this.adminGuard = adminGuard;
         this.cosStorageService = cosStorageService;
         this.backupSettingService = backupSettingService;
         this.autoBackupScheduler = autoBackupScheduler;
+        this.backupRestoreService = backupRestoreService;
         this.localDir = Paths.get(backupProperties.getLocalDir()).toAbsolutePath().normalize();
     }
 
@@ -133,5 +139,19 @@ public class AdminBackupController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(resource);
+    }
+
+    /**
+     * 导入历史备份 JSON 恢复数据库：清空当前业务表（课程 / 模板 / 机构等，教师账号 user 表保留）
+     * 后按 JSON 全量插回，保留原 id 与外键关系。单事务，失败回滚。
+     */
+    @PostMapping(value = "/restore", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @OperationLog(module = "backup", action = "RESTORE")
+    public Result<Map<String, Object>> restore(@RequestParam("file") MultipartFile file) {
+        adminGuard.requireAdmin();
+        if (file == null || file.isEmpty()) {
+            throw new BusinessException(400, "请选择备份文件");
+        }
+        return Result.ok(backupRestoreService.restore(file));
     }
 }
