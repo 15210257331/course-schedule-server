@@ -4,8 +4,8 @@
 <mapper namespace="com.chenxiaofei.coursescheduleserver.backup.mapper.BackupRecordMapper">
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO backup_record(file_name, file_path, file_size, status, storage_type, error_msg)
-        VALUES(#{fileName}, #{filePath}, #{fileSize}, #{status}, #{storageType}, #{errorMsg})
+        INSERT INTO backup_record(file_name, file_path, file_size, status, storage_type, trigger_type, error_msg)
+        VALUES(#{fileName}, #{filePath}, #{fileSize}, #{status}, #{storageType}, #{triggerType}, #{errorMsg})
     </insert>
 
     <select id="listRecent" resultType="com.chenxiaofei.coursescheduleserver.backup.entity.BackupRecord">

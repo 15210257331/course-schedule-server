@@ -1,6 +1,5 @@
 package com.chenxiaofei.coursescheduleserver.course.service;
 
-import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import org.slf4j.Logger;
@@ -22,22 +21,16 @@ public class CourseStatusScheduler {
     private static final Logger log = LoggerFactory.getLogger(CourseStatusScheduler.class);
 
     private final CourseMapper courseMapper;
-    private final UserMapper userMapper;
 
-    public CourseStatusScheduler(CourseMapper courseMapper, UserMapper userMapper) {
+    public CourseStatusScheduler(CourseMapper courseMapper) {
         this.courseMapper = courseMapper;
-        this.userMapper = userMapper;
     }
 
-    /** 每分钟跑一次：增量结算刚过结束时间的课程 */
-    @Scheduled(fixedDelay = 60_000)
+    /** 每 5 分钟跑一次：增量结算刚过结束时间的课程 */
+    @Scheduled(fixedDelay = 300_000)
     public void settleExpiredCourses() {
         try {
-            List<Long> userIds = userMapper.listAllIds();
-            if (userIds == null || userIds.isEmpty()) {
-                return;
-            }
-            List<Course> expired = courseMapper.listExpiredScheduled(userIds, LocalDateTime.now());
+            List<Course> expired = courseMapper.listExpiredScheduled(LocalDateTime.now());
             if (expired == null || expired.isEmpty()) {
                 return;
             }

@@ -15,8 +15,6 @@ public interface UserMapper {
 
     User findByEmail(@Param("email") String email);
 
-    List<Long> listAllIds();
-
     int insert(User user);
 
     int updateProfile(User user);

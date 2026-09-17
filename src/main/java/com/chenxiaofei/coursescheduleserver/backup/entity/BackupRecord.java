@@ -18,6 +18,8 @@ public class BackupRecord {
     private String status;
     /** 存储位置：local（服务器本地）/ cos（腾讯云 COS） */
     private String storageType;
+    /** 触发方式：auto（每日定时）/ manual（管理端手动）；历史数据为空 */
+    private String triggerType;
     private String errorMsg;
     private LocalDateTime createdAt;
 }

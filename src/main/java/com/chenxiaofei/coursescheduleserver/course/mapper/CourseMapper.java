@@ -53,10 +53,10 @@ public interface CourseMapper {
     long countByOrganization(@Param("userId") Long userId, @Param("organizationId") Long organizationId);
 
     /** 到期未结的 scheduled 课程（end_time < now），用于按时间自动结算为 completed */
-    List<Course> listExpiredScheduled(@Param("userIds") List<Long> userIds, @Param("now") LocalDateTime now);
+    List<Course> listExpiredScheduled(@Param("now") LocalDateTime now);
 
     /** 到点未提醒的 scheduled 课程（now 已到达 start_time - 提醒偏移），用于生成提醒 */
-    List<Course> listDueReminder(@Param("userIds") List<Long> userIds, @Param("now") LocalDateTime now);
+    List<Course> listDueReminder(@Param("now") LocalDateTime now);
 
     /** 批量更新课程状态 */
     int batchUpdateStatus(@Param("ids") List<Long> ids, @Param("status") String status);

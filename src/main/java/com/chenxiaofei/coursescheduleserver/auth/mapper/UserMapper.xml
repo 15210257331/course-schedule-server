@@ -15,10 +15,6 @@
         SELECT * FROM `user` WHERE email = #{email} LIMIT 1
     </select>
 
-    <select id="listAllIds" resultType="long">
-        SELECT id FROM `user`
-    </select>
-
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO `user`(username, password, nickname, avatar, email, phone, subjects, role)
         VALUES(#{username}, #{password}, #{nickname}, #{avatar}, #{email}, #{phone}, #{subjects}, #{role})

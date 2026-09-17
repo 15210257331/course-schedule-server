@@ -108,6 +108,9 @@ public class SchemaMigration implements CommandLineRunner {
                 "ALTER TABLE backup_record MODIFY COLUMN file_path VARCHAR(500) NULL COMMENT '相对路径或 COS key（失败时为空）'");
         addColumnIfMissing("backup_record", "storage_type",
                 "ALTER TABLE backup_record ADD COLUMN storage_type VARCHAR(20) NOT NULL DEFAULT 'local' AFTER status");
+        // 触发方式：存量记录无法区分来源，保持为空（不参与「当天是否已自动备份」判重，避免漏备）
+        addColumnIfMissing("backup_record", "trigger_type",
+                "ALTER TABLE backup_record ADD COLUMN trigger_type VARCHAR(20) NULL COMMENT '触发方式：auto（每日定时）/ manual（管理端手动），历史数据为空' AFTER storage_type");
     }
 
     /**

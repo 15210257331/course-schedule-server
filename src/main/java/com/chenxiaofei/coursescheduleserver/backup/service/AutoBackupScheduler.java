@@ -7,34 +7,31 @@ import tools.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.annotation.SchedulingConfigurer;
-import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * 自动备份定时任务：每天晚上 22:00 把全库关键表快照成 JSON 文件，保留最近 N 份，
+ * 自动备份定时任务：每天北京时间 22:00 把全库关键表快照成 JSON 文件，保留最近 N 份，
  * 并写入 backup_record 供管理端查看。
  * 备份存储位置由配置开关决定：本地目录（app.backup.cos.enabled=false）
  * 或腾讯云 COS（=true，异地备份，本地不留存）。
  * <p>
- * 调度方式为短周期轮询（每 30 秒一次）：若服务在备份时刻未运行
- * （如夜间停机后重启），启动后也会自动补一次当天的备份。
+ * 调度使用 cron 精确触发，不做补偿：若服务在 22:00 未运行（发布重启 / 停机），
+ * 当天不会补备份。cron 表达式里显式声明时区，不依赖 JVM 默认时区。
  */
 @Component
-public class AutoBackupScheduler implements SchedulingConfigurer {
+public class AutoBackupScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(AutoBackupScheduler.class);
 
@@ -47,8 +44,10 @@ public class AutoBackupScheduler implements SchedulingConfigurer {
     /** 保留的最近备份份数 */
     private static final int KEEP = 14;
 
-    /** 每日自动备份时刻：晚上 22:00 */
-    private static final LocalTime BACKUP_TIME = LocalTime.of(22, 0);
+    /** 备份时间戳所依据的时区：容器 JVM 默认时区可能是 UTC，不显式指定会与数据库差 8 小时 */
+    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
+
+    private static final DateTimeFormatter NAME_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final JdbcTemplate jdbc;
     private final BackupRecordMapper backupRecordMapper;
@@ -74,47 +73,15 @@ public class AutoBackupScheduler implements SchedulingConfigurer {
         this.localDir = Paths.get(backupProperties.getLocalDir()).toAbsolutePath().normalize();
     }
 
-    /** 最近一次备份日期（null 表示尚未从备份记录回填），用于保证每天最多备份一次 */
-    private LocalDate lastBackupDay;
-
-    // 轮询注册：每 30 秒检查一次是否到达每日备份时间
-    @Override
-    public void configureTasks(ScheduledTaskRegistrar registrar) {
-        registrar.addFixedDelayTask(this::backupTick, Duration.ofSeconds(30));
+    /** 备份文件名（北京时间），手动与自动共用同一命名规则 */
+    public static String newBackupName() {
+        return "full-backup-" + LocalDateTime.now(ZONE).format(NAME_FORMAT) + ".json";
     }
 
-    /** 到达每日备份时间（22:00）且今天尚未备份时执行备份 */
-    private synchronized void backupTick() {
-        LocalDate today = LocalDate.now();
-        if (lastBackupDay == null) {
-            // 启动后首次检查：今天已有备份记录则跳过，避免重启后重复备份
-            lastBackupDay = latestBackupDay();
-        }
-        if (today.equals(lastBackupDay)) {
-            return;
-        }
-        if (LocalTime.now().isBefore(BACKUP_TIME)) {
-            return;
-        }
-        lastBackupDay = today;
-        autoBackup();
-    }
-
-    /** 最近一条备份记录所属日期，读取失败时返回 null（视为今天尚未备份，宁可多备不可漏备） */
-    private LocalDate latestBackupDay() {
-        try {
-            List<BackupRecord> latest = backupRecordMapper.listRecent(1);
-            return latest.isEmpty() ? null : latest.get(0).getCreatedAt().toLocalDate();
-        } catch (Exception e) {
-            log.warn("读取最近备份记录失败：{}", e.getMessage());
-            return null;
-        }
-    }
-
-    /** 执行自动备份（每天晚上 22:00 触发） */
+    /** 每日自动备份：北京时间 22:00，按当前全局存储位置执行一次 */
+    @Scheduled(cron = "0 0 22 * * *", zone = "Asia/Shanghai")
     public void autoBackup() {
-        String name = "full-backup-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")) + ".json";
-        backupOnce(name, backupSettingService.useCos(), false);
+        backupOnce(newBackupName(), backupSettingService.useCos(), false);
     }
 
     /**
@@ -122,29 +89,34 @@ public class AutoBackupScheduler implements SchedulingConfigurer {
      *
      * @param name         备份文件名
      * @param useCos       是否使用腾讯云 COS（true=cos，false=服务器本地）
-     * @param manual       是否为管理端手动触发（用于日志区分，不改变备份逻辑）
+     * @param manual       是否为管理端手动触发（记为 trigger_type=manual，仅用于区分来源）
      * @return 新写入的备份记录（含 id，供管理端前端刷新定位）
      */
     public BackupRecord backupOnce(String name, boolean useCos, boolean manual) {
+        String triggerType = manual ? "manual" : "auto";
         try {
             Map<String, Object> snapshot = new LinkedHashMap<>();
-            snapshot.put("backupAt", LocalDateTime.now().toString());
+            snapshot.put("backupAt", LocalDateTime.now(ZONE).toString());
             snapshot.put("tables", dumpTables());
 
             BackupRecord record = new BackupRecord();
             record.setFileName(name);
             record.setStatus("success");
+            record.setTriggerType(triggerType);
 
             if (useCos) {
                 // 异地备份：先写临时文件上传到 COS，成功后删除本地临时文件
-                File tmp = Files.createFile(localDir.resolve(".tmp-" + name)).toFile();
+                Files.createDirectories(localDir);
+                Path tmp = localDir.resolve(".tmp-" + name);
                 try {
-                    objectMapper.writeValue(tmp, snapshot);
-                    String key = cosStorageService.upload(tmp);
+                    objectMapper.writeValue(tmp.toFile(), snapshot);
+                    // 临时文件上传后即删除，大小必须在这之前取
+                    record.setFileSize(Files.size(tmp));
+                    String key = cosStorageService.upload(tmp.toFile(), name);
                     record.setStorageType("cos");
                     record.setFilePath(key);
                 } finally {
-                    Files.deleteIfExists(tmp.toPath());
+                    Files.deleteIfExists(tmp);
                 }
             } else {
                 Files.createDirectories(localDir);
@@ -166,6 +138,7 @@ public class AutoBackupScheduler implements SchedulingConfigurer {
             record.setFilePath(null);
             record.setStatus("failed");
             record.setStorageType(useCos ? "cos" : "local");
+            record.setTriggerType(triggerType);
             record.setErrorMsg(e.getMessage());
             try {
                 backupRecordMapper.insert(record);

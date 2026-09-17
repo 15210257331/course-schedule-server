@@ -37,13 +37,18 @@ public class CosStorageService {
         return properties.getCos().isEnabled();
     }
 
-    /** 上传本地文件到 COS，返回对象 key（不含桶名，形如 backups/full-backup-xxx.json） */
-    public String upload(File file) {
+    /**
+     * 上传本地文件到 COS，返回对象 key（不含桶名，形如 backups/full-backup-xxx.json）。
+     *
+     * @param file     待上传的本地文件
+     * @param fileName 桶内对象名，与本地文件名无关（本地可能是 .tmp- 临时文件）
+     */
+    public String upload(File file, String fileName) {
         BackupProperties.Cos cos = properties.getCos();
         if (cos.getSecretId().isBlank() || cos.getSecretKey().isBlank() || cos.getBucket().isBlank()) {
             throw new IllegalStateException("COS 未配置 secret-id/secret-key/bucket，无法上传备份");
         }
-        String key = keyFor(file.getName());
+        String key = keyFor(fileName);
         COSClient client = client();
         try {
             ObjectMetadata metadata = new ObjectMetadata();

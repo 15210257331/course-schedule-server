@@ -101,10 +101,6 @@
 
     <select id="listExpiredScheduled" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
         SELECT * FROM course WHERE status = 'scheduled' AND end_time &lt; #{now}
-        <if test="userIds != null and userIds.size() > 0">
-            AND user_id IN
-            <foreach collection="userIds" item="uid" open="(" separator="," close=")">#{uid}</foreach>
-        </if>
     </select>
 
     <update id="batchUpdateStatus">
@@ -117,10 +113,6 @@
         LEFT JOIN setting st ON st.user_id = c.user_id AND st.setting_key = 'reminderOffset'
         WHERE c.status = 'scheduled' AND c.start_time &gt;= #{now}
         AND c.start_time &lt;= DATE_ADD(#{now}, INTERVAL COALESCE(CAST(st.setting_value AS SIGNED), c.reminder_offset_minutes, 30) MINUTE)
-        <if test="userIds != null and userIds.size() > 0">
-            AND c.user_id IN
-            <foreach collection="userIds" item="uid" open="(" separator="," close=")">#{uid}</foreach>
-        </if>
     </select>
 
 </mapper>

@@ -26,8 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -96,8 +94,8 @@ public class AdminBackupController {
     @OperationLog(module = "backup", action = "RUN_NOW")
     public Result<BackupRecord> runNow() {
         adminGuard.requireAdmin();
-        String name = "full-backup-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")) + ".json";
-        BackupRecord record = autoBackupScheduler.backupOnce(name, backupSettingService.useCos(), true);
+        BackupRecord record = autoBackupScheduler.backupOnce(
+                AutoBackupScheduler.newBackupName(), backupSettingService.useCos(), true);
         if (!"success".equals(record.getStatus())) {
             throw new BusinessException(500, "备份失败：" + record.getErrorMsg());
         }

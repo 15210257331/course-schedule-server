@@ -1,6 +1,5 @@
 package com.chenxiaofei.coursescheduleserver.coursemessage.service;
 
-import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.coursemessage.entity.CourseMessage;
@@ -24,25 +23,19 @@ public class ReminderScheduler {
     private static final Logger log = LoggerFactory.getLogger(ReminderScheduler.class);
     private static final DateTimeFormatter HM = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final UserMapper userMapper;
     private final CourseMapper courseMapper;
     private final CourseMessageMapper courseMessageMapper;
 
-    public ReminderScheduler(UserMapper userMapper, CourseMapper courseMapper, CourseMessageMapper courseMessageMapper) {
-        this.userMapper = userMapper;
+    public ReminderScheduler(CourseMapper courseMapper, CourseMessageMapper courseMessageMapper) {
         this.courseMapper = courseMapper;
         this.courseMessageMapper = courseMessageMapper;
     }
 
-    /** 每分钟一次：把刚进入提醒窗口的课程生成提醒 */
+    /** 每分钟一次：把刚进入提醒窗口的课程生成提醒。间隔须小于提醒提前量，否则窗口会被整个跳过 */
     @Scheduled(fixedDelay = 60_000)
     public void generateDueReminders() {
         try {
-            List<Long> userIds = userMapper.listAllIds();
-            if (userIds == null || userIds.isEmpty()) {
-                return;
-            }
-            List<Course> due = courseMapper.listDueReminder(userIds, LocalDateTime.now());
+            List<Course> due = courseMapper.listDueReminder(LocalDateTime.now());
             if (due == null || due.isEmpty()) {
                 return;
             }

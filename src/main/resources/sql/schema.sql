@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS backup_record (
     file_size    BIGINT COMMENT '字节数',
     status       VARCHAR(20) NOT NULL DEFAULT 'success' COMMENT '状态：success/failed',
     storage_type VARCHAR(20) NOT NULL DEFAULT 'local' COMMENT '存储位置：local/cos',
+    trigger_type VARCHAR(20) COMMENT '触发方式：auto（每日定时）/ manual（管理端手动），历史数据为空',
     error_msg    VARCHAR(500) COMMENT '失败原因',
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_backup_time (created_at)
