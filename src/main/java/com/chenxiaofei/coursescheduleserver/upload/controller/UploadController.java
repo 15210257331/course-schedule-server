@@ -3,9 +3,11 @@ package com.chenxiaofei.coursescheduleserver.upload.controller;
 import com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment;
 import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.common.FileUploadValidator;
 import com.chenxiaofei.coursescheduleserver.common.Result;
+import com.chenxiaofei.coursescheduleserver.config.PathResolver;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,9 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -25,19 +25,11 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/upload")
+@RequiredArgsConstructor
 public class UploadController {
 
-    private static final Set<String> ALLOWED_EXT = Set.of("jpg", "jpeg", "png", "gif", "webp");
-    private static final long MAX_SIZE = 2 * 1024 * 1024;
-
-    private final Path uploadDir;
     private final AttachmentService attachmentService;
-
-    public UploadController(@Value("${app.upload-dir:./uploads}") String uploadDir,
-                            AttachmentService attachmentService) {
-        this.uploadDir = Paths.get(uploadDir).toAbsolutePath().normalize();
-        this.attachmentService = attachmentService;
-    }
+    private final PathResolver pathResolver;
 
     /** 附件上传：挂到课程模板（学生）下 */
     @PostMapping("/attachment")
@@ -48,19 +40,9 @@ public class UploadController {
 
     @PostMapping("/avatar")
     public Result<Map<String, String>> avatar(@RequestParam("file") MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BusinessException(400, "请选择要上传的图片");
-        }
-        if (file.getSize() > MAX_SIZE) {
-            throw new BusinessException(400, "图片大小不能超过 2MB");
-        }
-        String original = file.getOriginalFilename();
-        String ext = original == null ? "" : original.substring(original.lastIndexOf('.') + 1).toLowerCase();
-        if (!ALLOWED_EXT.contains(ext)) {
-            throw new BusinessException(400, "仅支持 jpg/jpeg/png/gif/webp 图片");
-        }
+        String ext = FileUploadValidator.forAvatar().validate(file);
         try {
-            Path dir = uploadDir.resolve("avatar");
+            Path dir = pathResolver.uploadDir().resolve("avatar");
             Files.createDirectories(dir);
             String name = "u" + UserContext.getUserId() + "_" + UUID.randomUUID().toString().substring(0, 8) + "." + ext;
             Path target = dir.resolve(name);

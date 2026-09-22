@@ -5,57 +5,47 @@ import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherPageRequest;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherStatusRequest;
 import com.chenxiaofei.coursescheduleserver.admin.service.AdminTeacherService;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
+import com.chenxiaofei.coursescheduleserver.common.IdRequest;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
-import com.chenxiaofei.coursescheduleserver.security.AdminGuard;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Map;
 
 /**
  * 管理端 - 教师（用户）管理
  */
 @RestController
 @RequestMapping("/api/admin/teachers")
+@RequiredArgsConstructor
 public class AdminTeacherController {
 
     private final AdminTeacherService service;
-    private final AdminGuard adminGuard;
-
-    public AdminTeacherController(AdminTeacherService service, AdminGuard adminGuard) {
-        this.service = service;
-        this.adminGuard = adminGuard;
-    }
 
     @PostMapping("/page")
     public Result<PageResult<TeacherListItem>> page(@RequestBody TeacherPageRequest request) {
-        adminGuard.requireAdmin();
         return Result.ok(service.page(request));
     }
 
     @PostMapping("/detail")
-    public Result<User> detail(@RequestBody Map<String, Long> body) {
-        adminGuard.requireAdmin();
-        return Result.ok(service.detail(body.get("id")));
+    public Result<User> detail(@RequestBody IdRequest body) {
+        return Result.ok(service.detail(body.getId()));
     }
 
     @PostMapping("/status")
     @OperationLog(module = "teacher", action = "STATUS")
     public Result<Void> updateStatus(@RequestBody TeacherStatusRequest request) {
-        adminGuard.requireAdmin();
         service.updateStatus(request);
         return Result.ok();
     }
 
     @PostMapping("/reset-password")
     @OperationLog(module = "teacher", action = "RESET_PASSWORD")
-    public Result<Void> resetPassword(@RequestBody Map<String, Long> body) {
-        adminGuard.requireAdmin();
-        service.resetPassword(body.get("id"));
+    public Result<Void> resetPassword(@RequestBody IdRequest body) {
+        service.resetPassword(body.getId());
         return Result.ok();
     }
 }

@@ -1,15 +1,15 @@
 package com.chenxiaofei.coursescheduleserver.operationlog.dto;
 
+import com.chenxiaofei.coursescheduleserver.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 操作日志分页查询参数（管理端）
  */
 @Data
-public class OperationLogPageRequest {
-
-    private Integer pageNum = 1;
-    private Integer pageSize = 20;
+@EqualsAndHashCode(callSuper = true)
+public class OperationLogPageRequest extends PageRequest {
 
     /** 模块筛选：auth/course/teacher/message/backup，空为全部 */
     private String module;

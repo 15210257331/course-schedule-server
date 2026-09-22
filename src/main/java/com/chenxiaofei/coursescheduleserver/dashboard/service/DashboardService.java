@@ -7,6 +7,7 @@ import com.chenxiaofei.coursescheduleserver.dashboard.entity.Settlement;
 import com.chenxiaofei.coursescheduleserver.dashboard.mapper.SettlementMapper;
 import com.chenxiaofei.coursescheduleserver.dashboard.mapper.StatMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,17 +20,12 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class DashboardService {
 
     private final StatMapper statMapper;
     private final CourseMapper courseMapper;
     private final SettlementMapper settlementMapper;
-
-    public DashboardService(StatMapper statMapper, CourseMapper courseMapper, SettlementMapper settlementMapper) {
-        this.statMapper = statMapper;
-        this.courseMapper = courseMapper;
-        this.settlementMapper = settlementMapper;
-    }
 
     public Map<String, Object> summary() {
         Long userId = UserContext.getUserId();

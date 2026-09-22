@@ -2,6 +2,7 @@ package com.chenxiaofei.coursescheduleserver.course.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.common.Pages;
 import com.chenxiaofei.coursescheduleserver.course.dto.CoursePageRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.CourseRequest;
 import com.chenxiaofei.coursescheduleserver.course.dto.CopyWeekResult;
@@ -9,6 +10,7 @@ import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
 import com.chenxiaofei.coursescheduleserver.setting.service.SettingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,15 +23,11 @@ import java.time.LocalTime;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CourseService {
 
     private final CourseMapper courseMapper;
     private final SettingService settingService;
-
-    public CourseService(CourseMapper courseMapper, SettingService settingService) {
-        this.courseMapper = courseMapper;
-        this.settingService = settingService;
-    }
 
     public List<Course> listInRange(LocalDateTime start, LocalDateTime end, String title) {
         return courseMapper.listInRange(UserContext.getUserId(), start, end, title);
@@ -38,12 +36,9 @@ public class CourseService {
     /** 分页查询（title 模糊、时间范围可选），按 start_time 倒序 */
     public PageResult<Course> page(CoursePageRequest req) {
         Long userId = UserContext.getUserId();
-        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
-        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
-        long offset = (long) (pageNum - 1) * pageSize;
-        long total = courseMapper.countInRange(userId, req.getStart(), req.getEnd(), req.getTitle());
-        List<Course> list = courseMapper.pageInRange(userId, req.getStart(), req.getEnd(), req.getTitle(), offset, pageSize);
-        return PageResult.of(total, list);
+        return Pages.of(req,
+                () -> courseMapper.countInRange(userId, req.getStart(), req.getEnd(), req.getTitle()),
+                (offset, limit) -> courseMapper.pageInRange(userId, req.getStart(), req.getEnd(), req.getTitle(), offset, limit));
     }
 
     public Course get(Long id) {

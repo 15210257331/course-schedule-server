@@ -1,5 +1,6 @@
 package com.chenxiaofei.coursescheduleserver.organization.controller;
 
+import com.chenxiaofei.coursescheduleserver.common.IdRequest;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationPageRequest;
@@ -7,6 +8,7 @@ import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationRequest
 import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
 import com.chenxiaofei.coursescheduleserver.organization.service.OrganizationService;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,13 +23,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/organizations")
+@RequiredArgsConstructor
 public class OrganizationController {
 
     private final OrganizationService service;
-
-    public OrganizationController(OrganizationService service) {
-        this.service = service;
-    }
 
     @PostMapping("/list")
     public Result<List<Organization>> list(@RequestBody(required = false) Map<String, String> body) {
@@ -42,9 +41,8 @@ public class OrganizationController {
     }
 
     @PostMapping("/detail")
-    public Result<Organization> get(@RequestBody Map<String, Long> body) {
-        Long id = body.get("id");
-        return Result.ok(service.get(id));
+    public Result<Organization> get(@RequestBody IdRequest body) {
+        return Result.ok(service.get(body.getId()));
     }
 
     @PostMapping

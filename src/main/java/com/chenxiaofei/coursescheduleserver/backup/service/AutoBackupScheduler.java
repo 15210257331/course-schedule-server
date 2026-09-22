@@ -2,8 +2,9 @@ package com.chenxiaofei.coursescheduleserver.backup.service;
 
 import com.chenxiaofei.coursescheduleserver.backup.entity.BackupRecord;
 import com.chenxiaofei.coursescheduleserver.backup.mapper.BackupRecordMapper;
-import com.chenxiaofei.coursescheduleserver.config.BackupProperties;
+import com.chenxiaofei.coursescheduleserver.config.PathResolver;
 import tools.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +31,7 @@ import java.util.Map;
  * 当天不会补备份。cron 表达式里显式声明时区，不依赖 JVM 默认时区。
  */
 @Component
+@RequiredArgsConstructor
 public class AutoBackupScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(AutoBackupScheduler.class);
@@ -52,26 +53,9 @@ public class AutoBackupScheduler {
     private final JdbcTemplate jdbc;
     private final BackupRecordMapper backupRecordMapper;
     private final ObjectMapper objectMapper;
-    private final BackupProperties backupProperties;
+    private final PathResolver pathResolver;
     private final CosStorageService cosStorageService;
     private final BackupSettingService backupSettingService;
-    private final Path localDir;
-
-    public AutoBackupScheduler(JdbcTemplate jdbc,
-                               BackupRecordMapper backupRecordMapper,
-                               ObjectMapper objectMapper,
-                               BackupProperties backupProperties,
-                               CosStorageService cosStorageService,
-                               BackupSettingService backupSettingService) {
-        this.jdbc = jdbc;
-        this.backupRecordMapper = backupRecordMapper;
-        this.objectMapper = objectMapper;
-        this.backupProperties = backupProperties;
-        this.cosStorageService = cosStorageService;
-        this.backupSettingService = backupSettingService;
-        // 备份本地目录：独立于 uploads，避免被 /uploads/** 静态映射公开访问
-        this.localDir = Paths.get(backupProperties.getLocalDir()).toAbsolutePath().normalize();
-    }
 
     /** 备份文件名（北京时间），手动与自动共用同一命名规则 */
     public static String newBackupName() {
@@ -94,6 +78,8 @@ public class AutoBackupScheduler {
      */
     public BackupRecord backupOnce(String name, boolean useCos, boolean manual) {
         String triggerType = manual ? "manual" : "auto";
+        // 备份本地目录：独立于 uploads，避免被 /uploads/** 静态映射公开访问
+        Path localDir = pathResolver.backupDir();
         try {
             Map<String, Object> snapshot = new LinkedHashMap<>();
             snapshot.put("backupAt", LocalDateTime.now(ZONE).toString());
@@ -125,7 +111,7 @@ public class AutoBackupScheduler {
                 record.setStorageType("local");
                 record.setFilePath("/backup/" + name);
                 record.setFileSize(Files.size(file));
-                prune();
+                prune(localDir);
             }
 
             backupRecordMapper.insert(record);
@@ -164,7 +150,7 @@ public class AutoBackupScheduler {
     }
 
     /** 只保留最近 KEEP 份备份文件（仅本地存储时生效） */
-    private void prune() {
+    private void prune(Path localDir) {
         try {
             File[] files = localDir.toFile().listFiles((dir, name) -> name.startsWith("full-backup-") && name.endsWith(".json"));
             if (files == null || files.length <= KEEP) {

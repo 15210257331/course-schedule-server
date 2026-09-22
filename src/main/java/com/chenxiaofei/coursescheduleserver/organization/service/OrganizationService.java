@@ -2,26 +2,24 @@ package com.chenxiaofei.coursescheduleserver.organization.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.common.Pages;
 import com.chenxiaofei.coursescheduleserver.course.mapper.CourseMapper;
 import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationPageRequest;
 import com.chenxiaofei.coursescheduleserver.organization.dto.OrganizationRequest;
 import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
 import com.chenxiaofei.coursescheduleserver.organization.mapper.OrganizationMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class OrganizationService {
 
     private final OrganizationMapper mapper;
     private final CourseMapper courseMapper;
-
-    public OrganizationService(OrganizationMapper mapper, CourseMapper courseMapper) {
-        this.mapper = mapper;
-        this.courseMapper = courseMapper;
-    }
 
     public List<Organization> list() {
         return list(null);
@@ -34,12 +32,9 @@ public class OrganizationService {
     /** 分页查询（name 模糊），按 id 倒序 */
     public PageResult<Organization> page(OrganizationPageRequest req) {
         Long userId = UserContext.getUserId();
-        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
-        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
-        long offset = (long) (pageNum - 1) * pageSize;
-        long total = mapper.countByUser(userId, req.getName());
-        List<Organization> list = mapper.pageByUser(userId, req.getName(), offset, pageSize);
-        return PageResult.of(total, list);
+        return Pages.of(req,
+                () -> mapper.countByUser(userId, req.getName()),
+                (offset, limit) -> mapper.pageByUser(userId, req.getName(), offset, limit));
     }
 
     public Organization get(Long id) {

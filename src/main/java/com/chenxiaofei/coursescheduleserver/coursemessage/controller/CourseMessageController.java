@@ -1,8 +1,10 @@
 package com.chenxiaofei.coursescheduleserver.coursemessage.controller;
 
+import com.chenxiaofei.coursescheduleserver.common.LimitRequest;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.coursemessage.entity.CourseMessage;
 import com.chenxiaofei.coursescheduleserver.coursemessage.service.CourseMessageService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,21 +13,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/course-messages")
+@RequiredArgsConstructor
 public class CourseMessageController {
 
     private final CourseMessageService service;
 
-    public CourseMessageController(CourseMessageService service) {
-        this.service = service;
-    }
-
     @PostMapping("/list")
-    public Result<List<CourseMessage>> list(@RequestBody(required = false) Map<String, Integer> body) {
-        int limit = (body != null && body.get("limit") != null) ? body.get("limit") : 20;
+    public Result<List<CourseMessage>> list(@RequestBody(required = false) LimitRequest body) {
+        int limit = (body != null && body.getLimit() != null) ? body.getLimit() : 20;
         return Result.ok(service.list(limit));
     }
 

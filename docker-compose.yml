@@ -1,0 +1,25 @@
+version: "3.8"
+
+services:
+  course-schedule-server:
+    build:
+      # Dockerfile 放在当前docker-compose.yml同目录
+      context: .
+      dockerfile: Dockerfile
+    container_name: course-schedule-server
+    ports:
+      - "9999:8080"
+    environment:
+      # 容器时区（和Dockerfile保持一致，双重保险）
+      TZ: Asia/Shanghai
+    volumes:
+      # 持久化挂载，对应Dockerfile里面的VOLUME目录
+      - ./uploads:/app/uploads
+      - ./backup:/app/backup
+    restart: always
+    # 可选：限制资源，防止容器占用过高
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G

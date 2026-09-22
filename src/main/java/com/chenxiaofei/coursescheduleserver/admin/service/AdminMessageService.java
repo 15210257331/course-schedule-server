@@ -2,6 +2,7 @@ package com.chenxiaofei.coursescheduleserver.admin.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.common.Pages;
 import com.chenxiaofei.coursescheduleserver.admin.dto.AdminMessagePageRequest;
 import com.chenxiaofei.coursescheduleserver.admin.dto.AdminMessageRequest;
 import com.chenxiaofei.coursescheduleserver.admin.entity.AdminMessage;
@@ -9,6 +10,7 @@ import com.chenxiaofei.coursescheduleserver.admin.mapper.AdminMessageMapper;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -17,29 +19,23 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AdminMessageService {
 
     private final AdminMessageMapper messageMapper;
     private final UserMapper userMapper;
 
-    public AdminMessageService(AdminMessageMapper messageMapper, UserMapper userMapper) {
-        this.messageMapper = messageMapper;
-        this.userMapper = userMapper;
-    }
-
     /** 管理端分页 */
     public PageResult<AdminMessage> page(AdminMessagePageRequest req) {
-        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
-        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
-        long offset = (long) (pageNum - 1) * pageSize;
-        long total = messageMapper.countMessages(req.getType(), req.getStatus(), req.getKeyword());
-        List<AdminMessage> list = messageMapper.pageMessages(req.getType(), req.getStatus(), req.getKeyword(), offset, pageSize);
+        PageResult<AdminMessage> result = Pages.of(req,
+                () -> messageMapper.countMessages(req.getType(), req.getStatus(), req.getKeyword()),
+                (offset, limit) -> messageMapper.pageMessages(req.getType(), req.getStatus(), req.getKeyword(), offset, limit));
         // 填充目标人数
         long teacherTotal = userMapper.countTeachers(null, null);
-        for (AdminMessage m : list) {
+        for (AdminMessage m : result.getList()) {
             m.setTargetCount(resolveTargetCount(m, teacherTotal));
         }
-        return PageResult.of(total, list);
+        return result;
     }
 
     public AdminMessage detail(Long id) {

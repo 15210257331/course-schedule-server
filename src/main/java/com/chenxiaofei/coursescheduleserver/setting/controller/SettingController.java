@@ -3,6 +3,7 @@ package com.chenxiaofei.coursescheduleserver.setting.controller;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.setting.dto.SettingsSaveRequest;
 import com.chenxiaofei.coursescheduleserver.setting.service.SettingService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,13 +14,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/settings")
+@RequiredArgsConstructor
 public class SettingController {
 
     private final SettingService service;
-
-    public SettingController(SettingService service) {
-        this.service = service;
-    }
 
     @PostMapping("/list")
     public Result<Map<String, String>> list() {

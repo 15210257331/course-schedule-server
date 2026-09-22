@@ -14,10 +14,12 @@ import com.chenxiaofei.coursescheduleserver.mail.MailService;
 import com.chenxiaofei.coursescheduleserver.operationlog.entity.OperationLog;
 import com.chenxiaofei.coursescheduleserver.operationlog.service.OperationLogService;
 import com.chenxiaofei.coursescheduleserver.security.JwtUtil;
-import org.mindrot.jbcrypt.BCrypt;
+import com.chenxiaofei.coursescheduleserver.security.PasswordService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
 
     private final UserMapper userMapper;
@@ -26,16 +28,7 @@ public class AuthService {
     private final MailService mailService;
     private final LoginAttemptGuard loginAttemptGuard;
     private final OperationLogService operationLogService;
-
-    public AuthService(UserMapper userMapper, JwtUtil jwtUtil, CaptchaStore captchaStore, MailService mailService,
-                       LoginAttemptGuard loginAttemptGuard, OperationLogService operationLogService) {
-        this.userMapper = userMapper;
-        this.jwtUtil = jwtUtil;
-        this.captchaStore = captchaStore;
-        this.mailService = mailService;
-        this.loginAttemptGuard = loginAttemptGuard;
-        this.operationLogService = operationLogService;
-    }
+    private final PasswordService passwordService;
 
     public LoginResponse login(LoginRequest request) {
         String username = request.getUsername() == null ? null : request.getUsername().trim();
@@ -45,7 +38,7 @@ public class AuthService {
         loginAttemptGuard.check(username, ip);
 
         User user = userMapper.findByUsername(username);
-        if (user == null || !BCrypt.checkpw(request.getPassword(), user.getPassword())) {
+        if (user == null || !passwordService.matches(request.getPassword(), user.getPassword())) {
             loginAttemptGuard.onFailure(username, ip);
             recordLogin(username, "LOGIN_FAIL", false, "用户名或密码错误", ip);
             throw new BusinessException(401, "用户名或密码错误");
@@ -87,7 +80,7 @@ public class AuthService {
         }
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setPassword(BCrypt.hashpw(request.getPassword(), BCrypt.gensalt()));
+        user.setPassword(passwordService.encode(request.getPassword()));
         user.setNickname(request.getNickname() == null || request.getNickname().isBlank()
                 ? request.getUsername() : request.getNickname());
         user.setEmail(request.getEmail());
@@ -120,10 +113,10 @@ public class AuthService {
 
     public void updatePassword(Long userId, PasswordUpdateRequest request) {
         User user = userMapper.findById(userId);
-        if (user == null || !BCrypt.checkpw(request.getOldPassword(), user.getPassword())) {
+        if (user == null || !passwordService.matches(request.getOldPassword(), user.getPassword())) {
             throw new BusinessException("原密码错误");
         }
-        userMapper.updatePassword(userId, BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
+        userMapper.updatePassword(userId, passwordService.encode(request.getNewPassword()));
     }
 
     /** 发送密码重置验证码（按邮箱定位用户） */
@@ -145,7 +138,7 @@ public class AuthService {
         if (user == null) {
             throw new BusinessException(404, "该邮箱未注册");
         }
-        userMapper.updatePassword(user.getId(), BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt()));
+        userMapper.updatePassword(user.getId(), passwordService.encode(request.getNewPassword()));
     }
 
     private LoginResponse buildResponse(User user) {

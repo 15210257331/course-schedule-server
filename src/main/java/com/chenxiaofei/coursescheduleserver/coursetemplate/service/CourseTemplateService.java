@@ -2,6 +2,7 @@ package com.chenxiaofei.coursescheduleserver.coursetemplate.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.common.Pages;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
@@ -12,6 +13,7 @@ import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplateReq
 import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.mapper.CourseTemplateMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,20 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class CourseTemplateService {
 
     private final CourseTemplateMapper mapper;
     private final UserMapper userMapper;
     private final CourseMapper courseMapper;
     private final AttachmentService attachmentService;
-
-    public CourseTemplateService(CourseTemplateMapper mapper, UserMapper userMapper, CourseMapper courseMapper,
-                                 AttachmentService attachmentService) {
-        this.mapper = mapper;
-        this.userMapper = userMapper;
-        this.courseMapper = courseMapper;
-        this.attachmentService = attachmentService;
-    }
 
     public List<CourseTemplate> list() {
         return list(null);
@@ -46,12 +41,9 @@ public class CourseTemplateService {
     /** 分页查询（学生姓名模糊），按 id 倒序 */
     public PageResult<CourseTemplate> page(CourseTemplatePageRequest req) {
         Long userId = UserContext.getUserId();
-        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
-        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
-        long offset = (long) (pageNum - 1) * pageSize;
-        long total = mapper.countByUser(userId, req.getName());
-        List<CourseTemplate> list = mapper.pageByUser(userId, req.getName(), offset, pageSize);
-        return PageResult.of(total, list);
+        return Pages.of(req,
+                () -> mapper.countByUser(userId, req.getName()),
+                (offset, limit) -> mapper.pageByUser(userId, req.getName(), offset, limit));
     }
 
     public CourseTemplate get(Long id) {

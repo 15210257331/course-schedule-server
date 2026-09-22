@@ -9,6 +9,7 @@ import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.region.Region;
 import com.qcloud.cos.http.HttpMethodName;
 import com.qcloud.cos.model.GeneratePresignedUrlRequest;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -23,15 +24,12 @@ import java.util.Date;
  * 客户端按需创建、用完关闭。
  */
 @Service
+@RequiredArgsConstructor
 public class CosStorageService {
 
     private static final Logger log = LoggerFactory.getLogger(CosStorageService.class);
 
     private final BackupProperties properties;
-
-    public CosStorageService(BackupProperties properties) {
-        this.properties = properties;
-    }
 
     public boolean enabled() {
         return properties.getCos().isEnabled();

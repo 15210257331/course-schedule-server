@@ -4,6 +4,7 @@ import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.config.BackupProperties;
 import com.chenxiaofei.coursescheduleserver.setting.entity.Setting;
 import com.chenxiaofei.coursescheduleserver.setting.mapper.SettingMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
  * 无人工设置时回退到 application.yaml 的 app.backup.cos.enabled 作为默认值。
  */
 @Service
+@RequiredArgsConstructor
 public class BackupSettingService {
 
     private static final String KEY_STORAGE_TYPE = "backup.storageType";
@@ -20,11 +22,6 @@ public class BackupSettingService {
 
     private final SettingMapper settingMapper;
     private final BackupProperties properties;
-
-    public BackupSettingService(SettingMapper settingMapper, BackupProperties properties) {
-        this.settingMapper = settingMapper;
-        this.properties = properties;
-    }
 
     /** 当前全局存储位置：cos / local */
     public String storageType() {

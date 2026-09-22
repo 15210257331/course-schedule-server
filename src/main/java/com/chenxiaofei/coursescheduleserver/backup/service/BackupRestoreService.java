@@ -1,6 +1,7 @@
 package com.chenxiaofei.coursescheduleserver.backup.service;
 
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,17 +30,13 @@ import java.util.Set;
  * schema 做列交集后跳过，不报错。
  */
 @Service
+@RequiredArgsConstructor
 public class BackupRestoreService {
 
     private static final Logger log = LoggerFactory.getLogger(BackupRestoreService.class);
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
-
-    public BackupRestoreService(JdbcTemplate jdbc, ObjectMapper objectMapper) {
-        this.jdbc = jdbc;
-        this.objectMapper = objectMapper;
-    }
 
     /**
      * 导入备份 JSON 恢复数据库。

@@ -2,8 +2,10 @@ package com.chenxiaofei.coursescheduleserver.attachment.controller;
 
 import com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment;
 import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
+import com.chenxiaofei.coursescheduleserver.common.IdRequest;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -27,13 +29,10 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/attachments")
+@RequiredArgsConstructor
 public class AttachmentController {
 
     private final AttachmentService service;
-
-    public AttachmentController(AttachmentService service) {
-        this.service = service;
-    }
 
     /** 某课程模板下的附件列表 */
     @PostMapping("/list")
@@ -45,9 +44,8 @@ public class AttachmentController {
 
     /** 下载：返回文件流，Content-Disposition 带原始文件名（UTF-8 编码支持中文名） */
     @PostMapping("/download")
-    public ResponseEntity<Resource> download(@RequestBody Map<String, Long> body) {
-        Long id = body.get("id");
-        Attachment a = service.get(id);
+    public ResponseEntity<Resource> download(@RequestBody IdRequest body) {
+        Attachment a = service.get(body.getId());
         Path file = service.resolveFile(a);
         if (!file.toFile().exists()) {
             return ResponseEntity.notFound().build();

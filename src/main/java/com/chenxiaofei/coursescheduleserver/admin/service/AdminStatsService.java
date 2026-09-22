@@ -4,6 +4,7 @@ import com.chenxiaofei.coursescheduleserver.admin.entity.AdminMessage;
 import com.chenxiaofei.coursescheduleserver.admin.mapper.AdminStatsMapper;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -16,15 +17,11 @@ import java.util.Map;
  * 管理端数据看板
  */
 @Service
+@RequiredArgsConstructor
 public class AdminStatsService {
 
     private final AdminStatsMapper statsMapper;
     private final UserMapper userMapper;
-
-    public AdminStatsService(AdminStatsMapper statsMapper, UserMapper userMapper) {
-        this.statsMapper = statsMapper;
-        this.userMapper = userMapper;
-    }
 
     /** 看板总览：统计卡片 + 近 N 天趋势 + 最新动态 */
     public Map<String, Object> overview(int days) {

@@ -1,5 +1,6 @@
 package com.chenxiaofei.coursescheduleserver.mail;
 
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -11,17 +12,13 @@ import org.springframework.stereotype.Service;
  * 邮件发送服务：enabled=true 时通过 SMTP 发送；否则仅打印验证码到日志（开发模式）。
  */
 @Service
+@RequiredArgsConstructor
 public class MailService {
 
     private static final Logger log = LoggerFactory.getLogger(MailService.class);
 
     private final MailProperties properties;
     private final ObjectProvider<JavaMailSender> mailSender;
-
-    public MailService(MailProperties properties, ObjectProvider<JavaMailSender> mailSender) {
-        this.properties = properties;
-        this.mailSender = mailSender;
-    }
 
     public void sendResetCode(String to, String code) {
         String subject = "TeacherOS 密码重置验证码";

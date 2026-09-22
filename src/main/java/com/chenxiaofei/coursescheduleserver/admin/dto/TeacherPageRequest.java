@@ -1,15 +1,15 @@
 package com.chenxiaofei.coursescheduleserver.admin.dto;
 
+import com.chenxiaofei.coursescheduleserver.common.PageRequest;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * 教师分页查询参数（管理端）
  */
 @Data
-public class TeacherPageRequest {
-
-    private Integer pageNum = 1;
-    private Integer pageSize = 20;
+@EqualsAndHashCode(callSuper = true)
+public class TeacherPageRequest extends PageRequest {
 
     /** 状态筛选：active/disabled，空为全部 */
     private String status;

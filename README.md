@@ -31,6 +31,15 @@ docker build -t course-schedule-server:latest .
 docker run -d --name course-schedule-server --restart unless-stopped -p 9999:8080 -v /root/web/course-schedule-server/uploads:/app/uploads -v /root/web/course-schedule-server/backup:/app/backup course-schedule-server:latest
 ```
 
+## 使用docker-compose启动
+
+```bash
+# 构建镜像并启动容器   `build`：自动读取当前目录 Dockerfile，构建镜像（不需要提前 docker build）
+docker-compose up -d --build
+# 停止服务
+docker-compose down
+```
+
 ## 敏感配置
 
 生产部署时，以下配置请通过环境变量注入，不要硬编码进仓库：

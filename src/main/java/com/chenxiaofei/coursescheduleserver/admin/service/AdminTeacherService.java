@@ -7,35 +7,30 @@ import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.common.Pages;
 import com.chenxiaofei.coursescheduleserver.mail.MailService;
-import org.mindrot.jbcrypt.BCrypt;
+import com.chenxiaofei.coursescheduleserver.security.PasswordService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
-import java.util.List;
 
 /**
  * 管理端 - 教师（用户）管理
  */
 @Service
+@RequiredArgsConstructor
 public class AdminTeacherService {
 
     private final UserMapper userMapper;
     private final MailService mailService;
-
-    public AdminTeacherService(UserMapper userMapper, MailService mailService) {
-        this.userMapper = userMapper;
-        this.mailService = mailService;
-    }
+    private final PasswordService passwordService;
 
     /** 教师分页（含统计） */
     public PageResult<TeacherListItem> page(TeacherPageRequest req) {
-        int pageNum = req.getPageNum() == null || req.getPageNum() < 1 ? 1 : req.getPageNum();
-        int pageSize = req.getPageSize() == null || req.getPageSize() < 1 ? 20 : req.getPageSize();
-        long offset = (long) (pageNum - 1) * pageSize;
-        long total = userMapper.countTeachers(req.getStatus(), req.getKeyword());
-        List<TeacherListItem> list = userMapper.pageTeacherItems(req.getStatus(), req.getKeyword(), offset, pageSize);
-        return PageResult.of(total, list);
+        return Pages.of(req,
+                () -> userMapper.countTeachers(req.getStatus(), req.getKeyword()),
+                (offset, limit) -> userMapper.pageTeacherItems(req.getStatus(), req.getKeyword(), offset, limit));
     }
 
     /** 教师详情 */
@@ -70,7 +65,7 @@ public class AdminTeacherService {
             throw new BusinessException(404, "教师不存在");
         }
         String newPassword = randomPassword(10);
-        userMapper.updatePassword(id, BCrypt.hashpw(newPassword, BCrypt.gensalt()));
+        userMapper.updatePassword(id, passwordService.encode(newPassword));
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             mailService.sendAdminResetPassword(user.getEmail(), user.getNickname(), newPassword);
         }

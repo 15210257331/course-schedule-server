@@ -1,5 +1,6 @@
 package com.chenxiaofei.coursescheduleserver.coursetemplate.controller;
 
+import com.chenxiaofei.coursescheduleserver.common.IdRequest;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplatePageRequest;
@@ -7,6 +8,7 @@ import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplateReq
 import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate;
 import com.chenxiaofei.coursescheduleserver.coursetemplate.service.CourseTemplateService;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
+import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,13 +23,10 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/course-templates")
+@RequiredArgsConstructor
 public class CourseTemplateController {
 
     private final CourseTemplateService service;
-
-    public CourseTemplateController(CourseTemplateService service) {
-        this.service = service;
-    }
 
     @PostMapping("/list")
     public Result<List<CourseTemplate>> list(@RequestBody(required = false) Map<String, String> body) {
@@ -42,9 +41,8 @@ public class CourseTemplateController {
     }
 
     @PostMapping("/detail")
-    public Result<CourseTemplate> get(@RequestBody Map<String, Long> body) {
-        Long id = body.get("id");
-        return Result.ok(service.get(id));
+    public Result<CourseTemplate> get(@RequestBody IdRequest body) {
+        return Result.ok(service.get(body.getId()));
     }
 
     @PostMapping

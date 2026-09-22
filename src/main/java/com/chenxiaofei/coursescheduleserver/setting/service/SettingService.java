@@ -3,6 +3,7 @@ package com.chenxiaofei.coursescheduleserver.setting.service;
 import com.chenxiaofei.coursescheduleserver.setting.entity.Setting;
 import com.chenxiaofei.coursescheduleserver.setting.mapper.SettingMapper;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -10,13 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class SettingService {
 
     private final SettingMapper mapper;
-
-    public SettingService(SettingMapper mapper) {
-        this.mapper = mapper;
-    }
 
     public Map<String, String> list() {
         List<Setting> settings = mapper.listByUser(UserContext.getUserId());

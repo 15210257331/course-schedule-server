@@ -4,7 +4,7 @@ import com.chenxiaofei.coursescheduleserver.organization.entity.Organization;
 import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.organization.mapper.OrganizationMapper;
 import com.chenxiaofei.coursescheduleserver.auth.mapper.UserMapper;
-import org.mindrot.jbcrypt.BCrypt;
+import com.chenxiaofei.coursescheduleserver.security.PasswordService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -20,10 +20,12 @@ public class DataInitializer implements CommandLineRunner {
 
     private final UserMapper userMapper;
     private final OrganizationMapper organizationMapper;
+    private final PasswordService passwordService;
 
-    public DataInitializer(UserMapper userMapper, OrganizationMapper organizationMapper) {
+    public DataInitializer(UserMapper userMapper, OrganizationMapper organizationMapper, PasswordService passwordService) {
         this.userMapper = userMapper;
         this.organizationMapper = organizationMapper;
+        this.passwordService = passwordService;
     }
 
     @Override
@@ -35,7 +37,7 @@ public class DataInitializer implements CommandLineRunner {
 
         User admin = new User();
         admin.setUsername("admin");
-        admin.setPassword(BCrypt.hashpw("admin123", BCrypt.gensalt()));
+        admin.setPassword(passwordService.encode("admin123"));
         admin.setNickname("晓飞老师");
         admin.setRole("ADMIN");
         admin.setEmail("admin@teacheros.local");

@@ -7,10 +7,12 @@ import com.chenxiaofei.coursescheduleserver.backup.service.BackupRestoreService;
 import com.chenxiaofei.coursescheduleserver.backup.service.BackupSettingService;
 import com.chenxiaofei.coursescheduleserver.backup.service.CosStorageService;
 import com.chenxiaofei.coursescheduleserver.common.BusinessException;
+import com.chenxiaofei.coursescheduleserver.common.IdRequest;
+import com.chenxiaofei.coursescheduleserver.common.LimitRequest;
 import com.chenxiaofei.coursescheduleserver.common.Result;
-import com.chenxiaofei.coursescheduleserver.config.BackupProperties;
+import com.chenxiaofei.coursescheduleserver.config.PathResolver;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
-import com.chenxiaofei.coursescheduleserver.security.AdminGuard;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -25,7 +27,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -34,43 +35,27 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/admin/backup")
+@RequiredArgsConstructor
 public class AdminBackupController {
 
     private final BackupRecordMapper backupRecordMapper;
-    private final AdminGuard adminGuard;
     private final CosStorageService cosStorageService;
     private final BackupSettingService backupSettingService;
     private final AutoBackupScheduler autoBackupScheduler;
     private final BackupRestoreService backupRestoreService;
-    private final Path localDir;
-
-    public AdminBackupController(BackupRecordMapper backupRecordMapper, AdminGuard adminGuard,
-                                 CosStorageService cosStorageService, BackupSettingService backupSettingService,
-                                 AutoBackupScheduler autoBackupScheduler,
-                                 BackupRestoreService backupRestoreService,
-                                 BackupProperties backupProperties) {
-        this.backupRecordMapper = backupRecordMapper;
-        this.adminGuard = adminGuard;
-        this.cosStorageService = cosStorageService;
-        this.backupSettingService = backupSettingService;
-        this.autoBackupScheduler = autoBackupScheduler;
-        this.backupRestoreService = backupRestoreService;
-        this.localDir = Paths.get(backupProperties.getLocalDir()).toAbsolutePath().normalize();
-    }
+    private final PathResolver pathResolver;
 
     /** 最近 N 条备份记录 */
     @PostMapping("/recent")
-    public Result<List<BackupRecord>> recent(@RequestBody(required = false) Map<String, Object> body) {
-        adminGuard.requireAdmin();
-        int limit = (body != null && body.get("limit") instanceof Number)
-                ? Math.min(Math.max(((Number) body.get("limit")).intValue(), 1), 100) : 20;
+    public Result<List<BackupRecord>> recent(@RequestBody(required = false) LimitRequest body) {
+        int limit = (body != null && body.getLimit() != null) ? body.getLimit() : 20;
+        limit = Math.min(Math.max(limit, 1), 100);
         return Result.ok(backupRecordMapper.listRecent(limit));
     }
 
     /** 全局备份存储位置（cos / local） */
     @PostMapping("/storage-setting")
     public Result<Map<String, Object>> storageSetting() {
-        adminGuard.requireAdmin();
         String storageType = backupSettingService.storageType();
         return Result.ok(Map.of("storageType", storageType));
     }
@@ -79,7 +64,6 @@ public class AdminBackupController {
     @PostMapping("/storage-setting/save")
     @OperationLog(module = "backup", action = "SET_STORAGE", detail = "{#body['storageType']}")
     public Result<Map<String, Object>> saveStorageSetting(@RequestBody Map<String, String> body) {
-        adminGuard.requireAdmin();
         String storageType = body == null ? null : body.get("storageType");
         backupSettingService.setStorageType(storageType);
         return Result.ok(Map.of("storageType", backupSettingService.storageType()));
@@ -93,7 +77,6 @@ public class AdminBackupController {
     @PostMapping("/run")
     @OperationLog(module = "backup", action = "RUN_NOW")
     public Result<BackupRecord> runNow() {
-        adminGuard.requireAdmin();
         BackupRecord record = autoBackupScheduler.backupOnce(
                 AutoBackupScheduler.newBackupName(), backupSettingService.useCos(), true);
         if (!"success".equals(record.getStatus())) {
@@ -108,9 +91,8 @@ public class AdminBackupController {
      * - cos：返回 302 跳转到 COS 临时签名 URL（仅管理员可触发）。
      */
     @PostMapping("/download")
-    public Object download(@RequestBody Map<String, Long> body) {
-        adminGuard.requireAdmin();
-        Long id = body.get("id");
+    public Object download(@RequestBody IdRequest body) {
+        Long id = body.getId();
         BackupRecord record = backupRecordMapper.getById(id);
         if (record == null) {
             throw new BusinessException(404, "备份记录不存在");
@@ -128,7 +110,7 @@ public class AdminBackupController {
 
         // 本地存储：filePath 形如 /backup/full-backup-xxx.json，映射到本地目录
         String fileName = record.getFileName();
-        Path file = localDir.resolve(fileName);
+        Path file = pathResolver.backupDir().resolve(fileName);
         if (!Files.exists(file)) {
             throw new BusinessException(404, "备份文件已不存在（可能已被清理）");
         }
@@ -146,7 +128,6 @@ public class AdminBackupController {
     @PostMapping(value = "/restore", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @OperationLog(module = "backup", action = "RESTORE")
     public Result<Map<String, Object>> restore(@RequestParam("file") MultipartFile file) {
-        adminGuard.requireAdmin();
         if (file == null || file.isEmpty()) {
             throw new BusinessException(400, "请选择备份文件");
         }
