@@ -1,10 +1,15 @@
 package com.chenxiaofei.coursescheduleserver.attachment.controller;
 
+import com.chenxiaofei.coursescheduleserver.attachment.dto.AttachmentPageRequest;
 import com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment;
 import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
 import com.chenxiaofei.coursescheduleserver.common.IdRequest;
+import com.chenxiaofei.coursescheduleserver.common.PageResult;
+import com.chenxiaofei.coursescheduleserver.common.Pages;
 import com.chenxiaofei.coursescheduleserver.common.Result;
+import com.chenxiaofei.coursescheduleserver.attachment.mapper.AttachmentMapper;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
+import com.chenxiaofei.coursescheduleserver.security.UserContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -25,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 附件：列表 / 下载 / 删除（上传见 UploadController.attachment）。
+ * 课件：列表 / 分页 / 下载 / 删除（上传见 UploadController.attachment）。
  */
 @RestController
 @RequestMapping("/api/attachments")
@@ -33,13 +38,25 @@ import java.util.Map;
 public class AttachmentController {
 
     private final AttachmentService service;
+    private final AttachmentMapper attachmentMapper;
 
-    /** 某课程模板下的附件列表 */
+    /** 某学生下的课件列表 */
     @PostMapping("/list")
     public Result<List<Attachment>> list(@RequestBody Map<String, Object> body) {
-        Object templateId = body.get("templateId");
-        Long tid = templateId == null ? null : Long.valueOf(templateId.toString());
-        return Result.ok(service.list(tid));
+        Object studentId = body.get("studentId");
+        Long sid = studentId == null ? null : Long.valueOf(studentId.toString());
+        return Result.ok(service.list(sid));
+    }
+
+    /** 课件分页列表（课件管理页）：按学生 + 文件名关键字筛选 */
+    @PostMapping("/page")
+    public Result<PageResult<Attachment>> page(@RequestBody AttachmentPageRequest request) {
+        Long userId = UserContext.getUserId();
+        String keyword = request.getKeyword() == null || request.getKeyword().isBlank()
+                ? null : request.getKeyword().trim();
+        return Result.ok(Pages.of(request,
+                () -> attachmentMapper.countByUser(userId, request.getStudentId(), keyword),
+                (offset, limit) -> attachmentMapper.pageByUser(userId, request.getStudentId(), keyword, offset, limit)));
     }
 
     /** 下载：返回文件流，Content-Disposition 带原始文件名（UTF-8 编码支持中文名） */

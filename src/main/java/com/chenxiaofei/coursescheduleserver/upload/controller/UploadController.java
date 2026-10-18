@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -31,11 +32,23 @@ public class UploadController {
     private final AttachmentService attachmentService;
     private final PathResolver pathResolver;
 
-    /** 附件上传：挂到课程模板（学生）下 */
+    /** 课件上传：可关联多个学生（studentIds 逗号分隔或重复字段；兼容旧的单个 studentId） */
     @PostMapping("/attachment")
     public Result<Attachment> attachment(@RequestParam("file") MultipartFile file,
-                                         @RequestParam("templateId") Long templateId) {
-        return Result.ok(attachmentService.upload(templateId, file));
+                                         @RequestParam(value = "studentId", required = false) Long studentId,
+                                         @RequestParam(value = "studentIds", required = false) List<String> studentIds) {
+        List<Long> ids = new java.util.ArrayList<>();
+        if (studentIds != null) {
+            for (String s : studentIds) {
+                if (s != null && !s.isBlank()) {
+                    ids.add(Long.valueOf(s.trim()));
+                }
+            }
+        }
+        if (ids.isEmpty() && studentId != null) {
+            ids.add(studentId);
+        }
+        return Result.ok(attachmentService.upload(ids, file));
     }
 
     @PostMapping("/avatar")

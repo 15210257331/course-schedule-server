@@ -38,9 +38,9 @@ public class AutoBackupScheduler {
 
     /** 全库备份涉及的业务表 */
     private static final List<String> TABLES = List.of(
-            "`user`", "organization", "course", "course_template", "course_message",
+            "`user`", "organization", "course", "student", "course_message",
             "setting", "settlement", "admin_message", "admin_message_read",
-            "attachment");
+            "attachment", "attachment_student");
 
     /** 保留的最近备份份数 */
     private static final int KEEP = 14;

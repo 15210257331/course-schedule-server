@@ -44,20 +44,18 @@ public class DataInitializer implements CommandLineRunner {
         userMapper.insert(admin);
         Long uid = admin.getId();
 
-        Organization xdf = org(uid, "新东方", "王老师", "13800000001", "北京市海淀区中关村大街 1 号");
-        Organization xes = org(uid, "学而思", "李老师", "13800000002", "北京市朝阳区望京 SOHO");
+        Organization xdf = org(uid, "新东方", "北京市海淀区中关村大街 1 号");
+        Organization xes = org(uid, "学而思", "北京市朝阳区望京 SOHO");
         organizationMapper.insert(xdf);
         organizationMapper.insert(xes);
 
         log.info("初始化完成。默认账号：admin / admin123");
     }
 
-    private Organization org(Long uid, String name, String contact, String phone, String address) {
+    private Organization org(Long uid, String name, String address) {
         Organization o = new Organization();
         o.setUserId(uid);
         o.setName(name);
-        o.setContactName(contact);
-        o.setContactPhone(phone);
         o.setAddress(address);
         return o;
     }

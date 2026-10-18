@@ -33,12 +33,12 @@ public class CourseService {
         return courseMapper.listInRange(UserContext.getUserId(), start, end, title);
     }
 
-    /** 分页查询（title 模糊、时间范围可选），按 start_time 倒序 */
+    /** 分页查询（标题/学生姓名模糊、时间范围、科目/学段/课程类型/机构/状态可选），按 start_time 倒序 */
     public PageResult<Course> page(CoursePageRequest req) {
         Long userId = UserContext.getUserId();
         return Pages.of(req,
-                () -> courseMapper.countInRange(userId, req.getStart(), req.getEnd(), req.getTitle()),
-                (offset, limit) -> courseMapper.pageInRange(userId, req.getStart(), req.getEnd(), req.getTitle(), offset, limit));
+                () -> courseMapper.countInRange(userId, req),
+                (offset, limit) -> courseMapper.pageInRange(userId, req, offset, limit));
     }
 
     public Course get(Long id) {
@@ -168,7 +168,7 @@ public class CourseService {
                     sourceMonday.atTime(LocalTime.MIN), sourceMonday.plusDays(7).atTime(LocalTime.MIN), null);
             CopyWeekResult result = new CopyWeekResult();
             for (Course src : sources) {
-                // 重复系列由模板/手动重复生成源，不参与整周复制，避免重复叠加
+                // 重复系列由学生/手动重复生成源，不参与整周复制，避免重复叠加
                 if (src.getRepeatType() != null && !src.getRepeatType().isBlank()) {
                     result.setSkippedRepeat(result.getSkippedRepeat() + 1);
                     continue;
@@ -243,7 +243,7 @@ public class CourseService {
                 next.setRepeatType(repeatType);
                 next.setRepeatEndDate(repeatEnd);
                 next.setParentId(c.getId());
-                next.setTemplateId(c.getTemplateId());
+                next.setStudentId(c.getStudentId());
                 courseMapper.insert(next);
             }
         }
@@ -305,8 +305,8 @@ public class CourseService {
         if (request.getParentId() != null) {
             c.setParentId(request.getParentId());
         }
-        if (request.getTemplateId() != null) {
-            c.setTemplateId(request.getTemplateId());
+        if (request.getStudentId() != null) {
+            c.setStudentId(request.getStudentId());
         }
     }
 

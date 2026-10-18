@@ -1,5 +1,6 @@
 package com.chenxiaofei.coursescheduleserver.course.mapper;
 
+import com.chenxiaofei.coursescheduleserver.course.dto.CoursePageRequest;
 import com.chenxiaofei.coursescheduleserver.course.entity.Course;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -14,11 +15,9 @@ public interface CourseMapper {
     List<Course> listInRange(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                              @Param("end") LocalDateTime end, @Param("title") String title);
 
-    long countInRange(@Param("userId") Long userId, @Param("start") LocalDateTime start,
-                      @Param("end") LocalDateTime end, @Param("title") String title);
+    long countInRange(@Param("userId") Long userId, @Param("req") CoursePageRequest req);
 
-    List<Course> pageInRange(@Param("userId") Long userId, @Param("start") LocalDateTime start,
-                             @Param("end") LocalDateTime end, @Param("title") String title,
+    List<Course> pageInRange(@Param("userId") Long userId, @Param("req") CoursePageRequest req,
                              @Param("offset") long offset, @Param("limit") int limit);
 
     Course findById(@Param("id") Long id, @Param("userId") Long userId);
@@ -32,14 +31,14 @@ public interface CourseMapper {
 
     int delete(@Param("id") Long id, @Param("userId") Long userId);
 
-    /** 按模板删除其排出的全部课程（删除模板时级联删除课程） */
-    int deleteByTemplate(@Param("userId") Long userId, @Param("templateId") Long templateId);
+    /** 按学生删除其排出的全部课程（删除学生时级联删除课程） */
+    int deleteByStudent(@Param("userId") Long userId, @Param("studentId") Long studentId);
 
-    /** 按模板列出其排出的全部课程（编辑模板时同步课程字段用） */
-    List<Course> listByTemplate(@Param("userId") Long userId, @Param("templateId") Long templateId);
+    /** 按学生列出其排出的全部课程（编辑学生时同步课程字段用） */
+    List<Course> listByStudent(@Param("userId") Long userId, @Param("studentId") Long studentId);
 
-    /** 解除课程与模板的关联（模板删除但课程保留时） */
-    int clearTemplate(@Param("userId") Long userId, @Param("templateId") Long templateId);
+    /** 解除课程与学生的关联（学生删除但课程保留时） */
+    int clearStudent(@Param("userId") Long userId, @Param("studentId") Long studentId);
 
     int countConflict(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                       @Param("end") LocalDateTime end);

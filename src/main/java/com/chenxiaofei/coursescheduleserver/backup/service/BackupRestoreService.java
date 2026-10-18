@@ -23,7 +23,7 @@ import java.util.Set;
 /**
  * 备份恢复：把 {@link AutoBackupScheduler} 导出的备份 JSON（{backupAt, tables:{表名:[行]}}）
  * 全量还原回数据库。策略为「先清空再插入」—— 对每张业务表 DELETE 后按 JSON 行原样插回，
- * 保留原 id 与外键关系（course.user_id / course.template_id 等）。
+ * 保留原 id 与外键关系（course.user_id / course.student_id 等）。
  * <p>
  * 不恢复 {@code user} 表（避免覆盖/锁死当前管理员账号；同一服务器恢复场景下用户行不变，
  * 课程等数据的 user_id 引用仍有效）。已废弃表（notification / attachment_group）按当前库

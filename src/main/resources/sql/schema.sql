@@ -24,9 +24,7 @@ CREATE TABLE IF NOT EXISTS organization (
     id            BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id       BIGINT       NOT NULL,
     name          VARCHAR(100) NOT NULL,
-    contact_name  VARCHAR(50),
-    contact_phone VARCHAR(20),
-    address       VARCHAR(255),
+    address       VARCHAR(255) NOT NULL,
     color         VARCHAR(20),
     remark        VARCHAR(500),
     created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -54,15 +52,15 @@ CREATE TABLE IF NOT EXISTS course (
     repeat_type              VARCHAR(20),
     repeat_end_date          DATE,
     parent_id                BIGINT,
-    template_id              BIGINT,
+    student_id               BIGINT,
     created_at               DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at               DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_course_user (user_id),
     INDEX idx_course_start (user_id, start_time),
-    INDEX idx_course_tpl (user_id, template_id)
+    INDEX idx_course_student (user_id, student_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
-CREATE TABLE IF NOT EXISTS course_template (
+CREATE TABLE IF NOT EXISTS student (
     id                BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id           BIGINT       NOT NULL,
     title             VARCHAR(100) NOT NULL,
@@ -78,7 +76,7 @@ CREATE TABLE IF NOT EXISTS course_template (
     repeat_type       VARCHAR(20) DEFAULT NULL COMMENT '拖入日历时的重复规则：daily/weekly/biweekly，NULL 不重复',
     created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_tpl_user (user_id)
+    INDEX idx_student_user (user_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 CREATE TABLE IF NOT EXISTS course_message (
@@ -172,15 +170,25 @@ CREATE TABLE IF NOT EXISTS backup_record (
     INDEX idx_backup_time (created_at)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
--- 附件：挂在课程模板（学生）下的资源文件元数据
+-- 课件：资源文件元数据（与学生的关联见 attachment_student 关联表，可一挂多）
 CREATE TABLE IF NOT EXISTS attachment (
     id           BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id      BIGINT NOT NULL,
-    template_id  BIGINT COMMENT '所属课程模板 id',
     file_name    VARCHAR(255) NOT NULL COMMENT '原始文件名',
     file_path    VARCHAR(255) NOT NULL COMMENT '相对路径 /uploads/attachment/...',
     file_size    BIGINT COMMENT '字节数',
     mime_type    VARCHAR(100) COMMENT 'MIME 类型',
     created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_attachment_tpl (user_id, template_id)
+    INDEX idx_attachment_user (user_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- 课件 ↔ 学生 关联表：一个课件可关联多个学生
+CREATE TABLE IF NOT EXISTS attachment_student (
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id       BIGINT NOT NULL COMMENT '所属用户',
+    attachment_id BIGINT NOT NULL COMMENT '课件 id',
+    student_id    BIGINT NOT NULL COMMENT '学生 id',
+    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_attachment_student (attachment_id, student_id),
+    INDEX idx_attachment_user_student (user_id, student_id)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;

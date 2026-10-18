@@ -19,11 +19,19 @@
 
     <sql id="courseRangeWhere">
         WHERE c.user_id = #{userId}
-        <if test="start != null">AND c.start_time &gt;= #{start}</if>
-        <if test="end != null">AND c.start_time &lt; #{end}</if>
-        <if test="title != null and title != ''">
-            AND c.title LIKE CONCAT('%', #{title}, '%')
+        <if test="req.start != null">AND c.start_time &gt;= #{req.start}</if>
+        <if test="req.end != null">AND c.start_time &lt; #{req.end}</if>
+        <if test="req.title != null and req.title != ''">
+            AND c.title LIKE CONCAT('%', #{req.title}, '%')
         </if>
+        <if test="req.studentName != null and req.studentName != ''">
+            AND c.student_name LIKE CONCAT('%', #{req.studentName}, '%')
+        </if>
+        <if test="req.subject != null and req.subject != ''">AND c.subject = #{req.subject}</if>
+        <if test="req.stage != null and req.stage != ''">AND c.stage = #{req.stage}</if>
+        <if test="req.courseType != null and req.courseType != ''">AND c.course_type = #{req.courseType}</if>
+        <if test="req.organizationId != null">AND c.organization_id = #{req.organizationId}</if>
+        <if test="req.status != null and req.status != ''">AND c.status = #{req.status}</if>
     </sql>
 
     <select id="countInRange" resultType="long">
@@ -46,10 +54,10 @@
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO course(user_id, title, student_name, organization_id, subject, stage, course_type,
         start_time, end_time, fee, location, note, status, color, reminder_offset_minutes,
-        repeat_type, repeat_end_date, parent_id, template_id)
+        repeat_type, repeat_end_date, parent_id, student_id)
         VALUES(#{userId}, #{title}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
         #{startTime}, #{endTime}, #{fee}, #{location}, #{note}, #{status}, #{color},
-        #{reminderOffsetMinutes}, #{repeatType}, #{repeatEndDate}, #{parentId}, #{templateId})
+        #{reminderOffsetMinutes}, #{repeatType}, #{repeatEndDate}, #{parentId}, #{studentId})
     </insert>
 
     <update id="update">
@@ -69,16 +77,16 @@
         DELETE FROM course WHERE id = #{id} AND user_id = #{userId}
     </delete>
 
-    <delete id="deleteByTemplate">
-        DELETE FROM course WHERE user_id = #{userId} AND template_id = #{templateId}
+    <delete id="deleteByStudent">
+        DELETE FROM course WHERE user_id = #{userId} AND student_id = #{studentId}
     </delete>
 
-    <select id="listByTemplate" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
-        SELECT * FROM course WHERE user_id = #{userId} AND template_id = #{templateId} ORDER BY start_time
+    <select id="listByStudent" resultType="com.chenxiaofei.coursescheduleserver.course.entity.Course">
+        SELECT * FROM course WHERE user_id = #{userId} AND student_id = #{studentId} ORDER BY start_time
     </select>
 
-    <update id="clearTemplate">
-        UPDATE course SET template_id = NULL WHERE user_id = #{userId} AND template_id = #{templateId}
+    <update id="clearStudent">
+        UPDATE course SET student_id = NULL WHERE user_id = #{userId} AND student_id = #{studentId}
     </update>
 
     <select id="countConflict" resultType="int">

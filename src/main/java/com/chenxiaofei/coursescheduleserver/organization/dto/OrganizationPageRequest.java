@@ -13,4 +13,7 @@ public class OrganizationPageRequest extends PageRequest {
 
     /** 机构名称模糊查询 */
     private String name;
+
+    /** 地址模糊查询 */
+    private String address;
 }

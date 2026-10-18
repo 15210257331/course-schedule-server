@@ -78,6 +78,14 @@
                     THEN ''
                     ELSE GROUP_CONCAT(DISTINCT c.student_name SEPARATOR '·')
                END AS studentNames,
+               CASE WHEN MAX(c.course_type) = '家教'
+                    THEN NULL
+                    ELSE MAX(o.id)
+               END AS organizationId,
+               CASE WHEN MAX(c.course_type) = '家教'
+                    THEN NULL
+                    ELSE MAX(o.color)
+               END AS color,
                COUNT(*) AS courseCount,
                IFNULL(SUM(c.fee), 0) AS fee
         FROM course c

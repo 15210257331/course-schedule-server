@@ -3,10 +3,31 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chenxiaofei.coursescheduleserver.attachment.mapper.AttachmentMapper">
 
-    <select id="listByTemplate" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
-        SELECT * FROM attachment
-        WHERE user_id = #{userId} AND template_id = #{templateId}
-        ORDER BY id DESC
+    <!-- 课件 + 关联学生姓名（GROUP_CONCAT 聚合，一个课件可关联多个学生） -->
+    <sql id="attachmentWithStudents">
+        SELECT a.*,
+               GROUP_CONCAT(s.student_name ORDER BY r.id SEPARATOR '、') AS student_name,
+               GROUP_CONCAT(s.id ORDER BY r.id) AS student_ids
+        FROM attachment a
+        LEFT JOIN attachment_student r
+               ON r.attachment_id = a.id AND r.user_id = a.user_id
+        LEFT JOIN student s
+               ON s.id = r.student_id AND s.user_id = r.user_id
+        GROUP BY a.id, a.user_id, a.file_name, a.file_path, a.file_size, a.mime_type, a.created_at
+    </sql>
+
+    <select id="listByStudent" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
+        SELECT a.*, GROUP_CONCAT(s.student_name ORDER BY r2.id SEPARATOR '、') AS student_name
+        FROM attachment a
+        INNER JOIN attachment_student r
+                ON r.attachment_id = a.id AND r.user_id = a.user_id
+        LEFT JOIN attachment_student r2
+               ON r2.attachment_id = a.id AND r2.user_id = a.user_id
+        LEFT JOIN student s
+               ON s.id = r2.student_id AND s.user_id = r2.user_id
+        WHERE a.user_id = #{userId} AND r.student_id = #{studentId}
+        GROUP BY a.id, a.user_id, a.file_name, a.file_path, a.file_size, a.mime_type, a.created_at
+        ORDER BY a.id DESC
     </select>
 
     <select id="listByUser" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
@@ -15,22 +36,80 @@
         ORDER BY id DESC
     </select>
 
+    <sql id="attachmentPageWhere">
+        WHERE a.user_id = #{userId}
+        <if test="studentId != null">
+            AND EXISTS (SELECT 1 FROM attachment_student r
+                         WHERE r.attachment_id = a.id AND r.user_id = a.user_id
+                           AND r.student_id = #{studentId})
+        </if>
+        <if test="keyword != null and keyword != ''">
+            AND a.file_name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+    </sql>
+
+    <select id="countByUser" resultType="long">
+        SELECT COUNT(*) FROM attachment a
+        <include refid="attachmentPageWhere"/>
+    </select>
+
+    <!-- 分页主查询：WHERE 先过滤再 GROUP BY 聚合学生（按学生筛选用 EXISTS 关联表） -->
+    <select id="pageByUser" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
+        SELECT a.*,
+               GROUP_CONCAT(s.student_name ORDER BY r.id SEPARATOR '、') AS student_name,
+               GROUP_CONCAT(s.id ORDER BY r.id) AS student_ids
+        FROM attachment a
+        LEFT JOIN attachment_student r
+               ON r.attachment_id = a.id AND r.user_id = a.user_id
+        LEFT JOIN student s
+               ON s.id = r.student_id AND s.user_id = r.user_id
+        <include refid="attachmentPageWhere"/>
+        GROUP BY a.id, a.user_id, a.file_name, a.file_path, a.file_size, a.mime_type, a.created_at
+        ORDER BY a.id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
     <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
         SELECT * FROM attachment
         WHERE id = #{id} AND user_id = #{userId}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO attachment(user_id, template_id, file_name, file_path, file_size, mime_type)
-        VALUES(#{userId}, #{templateId}, #{fileName}, #{filePath}, #{fileSize}, #{mimeType})
+        INSERT INTO attachment(user_id, file_name, file_path, file_size, mime_type)
+        VALUES(#{userId}, #{fileName}, #{filePath}, #{fileSize}, #{mimeType})
     </insert>
+
+    <insert id="insertStudentRef">
+        INSERT IGNORE INTO attachment_student(user_id, attachment_id, student_id)
+        VALUES(#{userId}, #{attachmentId}, #{studentId})
+    </insert>
+
+    <select id="existsStudentRef" resultType="long">
+        SELECT COUNT(*) FROM attachment_student
+        WHERE user_id = #{userId} AND attachment_id = #{attachmentId} AND student_id = #{studentId}
+    </select>
 
     <delete id="delete">
         DELETE FROM attachment WHERE id = #{id} AND user_id = #{userId}
     </delete>
 
-    <delete id="deleteByTemplate">
-        DELETE FROM attachment WHERE user_id = #{userId} AND template_id = #{templateId}
+    <delete id="deleteStudentRefsByAttachment">
+        DELETE FROM attachment_student
+        WHERE user_id = #{userId} AND attachment_id = #{attachmentId}
     </delete>
 
+    <!-- 删除某学生的全部关联前，先查出只关联了该学生（删完将变孤儿）的课件 id -->
+    <select id="findOrphanAttachmentIds" resultType="long">
+        SELECT r.attachment_id FROM attachment_student r
+        WHERE r.user_id = #{userId} AND r.student_id = #{studentId}
+          AND NOT EXISTS (SELECT 1 FROM attachment_student r2
+                           WHERE r2.attachment_id = r.attachment_id
+                             AND r2.user_id = r.user_id
+                             AND r2.student_id != #{studentId})
+    </select>
+
+    <delete id="deleteStudentRefsByStudent">
+        DELETE FROM attachment_student
+        WHERE user_id = #{userId} AND student_id = #{studentId}
+    </delete>
 </mapper>

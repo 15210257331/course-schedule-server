@@ -1,4 +1,4 @@
-package com.chenxiaofei.coursescheduleserver.coursetemplate.entity;
+package com.chenxiaofei.coursescheduleserver.student.entity;
 
 import lombok.Data;
 
@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-public class CourseTemplate {
+public class Student {
 
     private Long id;
     private Long userId;

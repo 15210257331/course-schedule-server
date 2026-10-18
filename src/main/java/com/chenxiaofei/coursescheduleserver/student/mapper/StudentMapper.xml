@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.chenxiaofei.coursescheduleserver.coursetemplate.mapper.CourseTemplateMapper">
+<mapper namespace="com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper">
 
-    <sql id="templateWithNames">
+    <sql id="studentWithNames">
         SELECT t.*,
-               (SELECT COUNT(*) FROM attachment a
-                 WHERE a.user_id = t.user_id AND a.template_id = t.id) AS attachment_count,
+               (SELECT COUNT(*) FROM attachment_student a
+                 WHERE a.user_id = t.user_id AND a.student_id = t.id) AS attachment_count,
                o.name AS organization_name
-        FROM course_template t
+        FROM student t
         LEFT JOIN organization o ON o.id = t.organization_id
     </sql>
 
-    <select id="listByUser" resultType="com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate">
-        <include refid="templateWithNames"/>
+    <select id="listByUser" resultType="com.chenxiaofei.coursescheduleserver.student.entity.Student">
+        <include refid="studentWithNames"/>
         WHERE t.user_id = #{userId}
         <if test="name != null and name != ''">
             AND t.student_name LIKE CONCAT('%', #{name}, '%')
@@ -21,45 +21,54 @@
         ORDER BY t.id DESC
     </select>
 
-    <sql id="tplPageWhere">
+    <sql id="studentPageWhere">
         WHERE t.user_id = #{userId}
-        <if test="name != null and name != ''">
-            AND t.student_name LIKE CONCAT('%', #{name}, '%')
+        <if test="req.name != null and req.name != ''">
+            AND t.student_name LIKE CONCAT('%', #{req.name}, '%')
+        </if>
+        <if test="req.stage != null and req.stage != ''">
+            AND t.stage = #{req.stage}
+        </if>
+        <if test="req.courseType != null and req.courseType != ''">
+            AND t.course_type = #{req.courseType}
+        </if>
+        <if test="req.organizationId != null">
+            AND t.organization_id = #{req.organizationId}
         </if>
     </sql>
 
     <select id="countByUser" resultType="long">
-        SELECT COUNT(*) FROM course_template t
-        <include refid="tplPageWhere"/>
+        SELECT COUNT(*) FROM student t
+        <include refid="studentPageWhere"/>
     </select>
 
-    <select id="pageByUser" resultType="com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate">
-        <include refid="templateWithNames"/>
-        <include refid="tplPageWhere"/>
+    <select id="pageByUser" resultType="com.chenxiaofei.coursescheduleserver.student.entity.Student">
+        <include refid="studentWithNames"/>
+        <include refid="studentPageWhere"/>
         ORDER BY t.id DESC
         LIMIT #{limit} OFFSET #{offset}
     </select>
 
-    <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate">
-        <include refid="templateWithNames"/>
+    <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.student.entity.Student">
+        <include refid="studentWithNames"/>
         WHERE t.id = #{id} AND t.user_id = #{userId}
     </select>
 
     <select id="countByStudentName" resultType="int">
-        SELECT COUNT(*) FROM course_template
+        SELECT COUNT(*) FROM student
         WHERE user_id = #{userId} AND student_name = #{studentName}
         <if test="excludeId != null">AND id != #{excludeId}</if>
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO course_template(user_id, title, student_name, organization_id, subject, stage, course_type,
+        INSERT INTO student(user_id, title, student_name, organization_id, subject, stage, course_type,
         duration_minutes, fee, location, note, repeat_type)
         VALUES(#{userId}, #{title}, #{studentName}, #{organizationId}, #{subject}, #{stage}, #{courseType},
         #{durationMinutes}, #{fee}, #{location}, #{note}, #{repeatType})
     </insert>
 
     <update id="update">
-        UPDATE course_template SET title = #{title}, student_name = #{studentName},
+        UPDATE student SET title = #{title}, student_name = #{studentName},
         organization_id = #{organizationId}, subject = #{subject}, stage = #{stage}, course_type = #{courseType},
         duration_minutes = #{durationMinutes}, fee = #{fee},
         location = #{location}, note = #{note}, repeat_type = #{repeatType}
@@ -67,7 +76,7 @@
     </update>
 
     <delete id="delete">
-        DELETE FROM course_template WHERE id = #{id} AND user_id = #{userId}
+        DELETE FROM student WHERE id = #{id} AND user_id = #{userId}
     </delete>
 
 </mapper>

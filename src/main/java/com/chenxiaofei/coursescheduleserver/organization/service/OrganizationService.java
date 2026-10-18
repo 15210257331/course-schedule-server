@@ -29,12 +29,12 @@ public class OrganizationService {
         return mapper.listByUser(UserContext.getUserId(), name);
     }
 
-    /** 分页查询（name 模糊），按 id 倒序 */
+    /** 分页查询（名称 / 地址模糊），按 id 倒序 */
     public PageResult<Organization> page(OrganizationPageRequest req) {
         Long userId = UserContext.getUserId();
         return Pages.of(req,
-                () -> mapper.countByUser(userId, req.getName()),
-                (offset, limit) -> mapper.pageByUser(userId, req.getName(), offset, limit));
+                () -> mapper.countByUser(userId, req),
+                (offset, limit) -> mapper.pageByUser(userId, req, offset, limit));
     }
 
     public Organization get(Long id) {
@@ -75,8 +75,6 @@ public class OrganizationService {
 
     private void apply(Organization org, OrganizationRequest request) {
         org.setName(request.getName());
-        org.setContactName(request.getContactName());
-        org.setContactPhone(request.getContactPhone());
         org.setAddress(request.getAddress());
         org.setColor(request.getColor());
         org.setRemark(request.getRemark());

@@ -14,13 +14,14 @@
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS `attachment_student`;
 DROP TABLE IF EXISTS `attachment`;
 DROP TABLE IF EXISTS `admin_message_read`;
 DROP TABLE IF EXISTS `admin_message`;
 DROP TABLE IF EXISTS `settlement`;
 DROP TABLE IF EXISTS `setting`;
 DROP TABLE IF EXISTS `course_message`;
-DROP TABLE IF EXISTS `course_template`;
+DROP TABLE IF EXISTS `student`;
 DROP TABLE IF EXISTS `course`;
 DROP TABLE IF EXISTS `organization`;
 DROP TABLE IF EXISTS `backup_record`;

@@ -9,9 +9,9 @@ public class OrganizationRequest {
     @NotBlank(message = "机构名称不能为空")
     private String name;
 
-    private String contactName;
-    private String contactPhone;
+    @NotBlank(message = "机构地址不能为空")
     private String address;
+
     private String color;
     private String remark;
 }

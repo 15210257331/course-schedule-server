@@ -6,6 +6,8 @@ import com.chenxiaofei.coursescheduleserver.common.BusinessException;
 import com.chenxiaofei.coursescheduleserver.common.FileUploadValidator;
 import com.chenxiaofei.coursescheduleserver.config.PathResolver;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
+import com.chenxiaofei.coursescheduleserver.student.entity.Student;
+import com.chenxiaofei.coursescheduleserver.student.mapper.StudentMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,34 +17,40 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * 附件：挂在课程模板（学生）下的资源文件。文件存 uploads/attachment/{userId}/ 下，按用户隔离。
+ * 课件：资源文件，通过 attachment_student 关联表挂到多个学生下。
+ * 文件存 uploads/attachment/{userId}/ 下，按用户隔离。
  */
 @Service
 @RequiredArgsConstructor
 public class AttachmentService {
 
     private final AttachmentMapper mapper;
+    private final StudentMapper studentMapper;
     private final PathResolver pathResolver;
 
-    /** 某课程模板下的附件列表 */
-    public List<Attachment> list(Long templateId) {
-        return mapper.listByTemplate(UserContext.getUserId(), templateId);
+    /** 某学生关联的课件列表 */
+    public List<Attachment> list(Long studentId) {
+        return mapper.listByStudent(UserContext.getUserId(), studentId);
     }
 
     public Attachment get(Long id) {
         Attachment a = mapper.findById(id, UserContext.getUserId());
         if (a == null) {
-            throw new BusinessException(404, "附件不存在");
+            throw new BusinessException(404, "课件不存在");
         }
         return a;
     }
 
+    /** 上传课件并关联到多个学生 */
     @Transactional
-    public Attachment upload(Long templateId, MultipartFile file) {
+    public Attachment upload(List<Long> studentIds, MultipartFile file) {
+        Set<Long> ids = normalizeStudentIds(studentIds);
         String ext = FileUploadValidator.forAttachment().validate(file);
         Long userId = UserContext.getUserId();
         try {
@@ -54,12 +62,15 @@ public class AttachmentService {
 
             Attachment a = new Attachment();
             a.setUserId(userId);
-            a.setTemplateId(templateId);
             a.setFileName(sanitizeFileName(file.getOriginalFilename()));
             a.setFilePath("/uploads/attachment/" + userId + "/" + stored);
             a.setFileSize(file.getSize());
             a.setMimeType(file.getContentType());
             mapper.insert(a);
+            for (Long sid : ids) {
+                mapper.insertStudentRef(userId, a.getId(), sid);
+            }
+            a.setStudentIds(List.copyOf(ids));
             return a;
         } catch (IOException e) {
             throw new BusinessException(500, "文件保存失败：" + e.getMessage());
@@ -70,7 +81,7 @@ public class AttachmentService {
     public Path resolveFile(Attachment a) {
         String path = a.getFilePath();
         if (path == null || !path.startsWith("/uploads/")) {
-            throw new BusinessException(500, "附件路径非法");
+            throw new BusinessException(500, "课件路径非法");
         }
         String relative = path.substring("/uploads/".length());
         return pathResolver.uploadDir().resolve(relative).normalize();
@@ -80,17 +91,47 @@ public class AttachmentService {
     public void delete(Long id) {
         Attachment a = get(id);
         deleteFile(a);
+        mapper.deleteStudentRefsByAttachment(UserContext.getUserId(), id);
         mapper.delete(id, UserContext.getUserId());
     }
 
-    /** 删除课程模板时级联清理其全部附件（含磁盘文件） */
+    /** 删除学生时级联清理其课件关联：不再关联任何学生的课件连同文件一并删除 */
     @Transactional
-    public void deleteByTemplate(Long templateId) {
+    public void deleteByStudent(Long studentId) {
         Long userId = UserContext.getUserId();
-        for (Attachment a : mapper.listByTemplate(userId, templateId)) {
-            deleteFile(a);
+        // 先找出删完该学生关联后将变成孤儿的课件，再删关联，最后清孤儿
+        List<Long> orphanIds = mapper.findOrphanAttachmentIds(userId, studentId);
+        mapper.deleteStudentRefsByStudent(userId, studentId);
+        for (Long id : orphanIds) {
+            Attachment a = mapper.findById(id, userId);
+            if (a != null) {
+                deleteFile(a);
+                mapper.delete(id, userId);
+            }
         }
-        mapper.deleteByTemplate(userId, templateId);
+    }
+
+    /** 校验并去重学生 id，全部不存在时抛错 */
+    private Set<Long> normalizeStudentIds(List<Long> studentIds) {
+        if (studentIds == null || studentIds.isEmpty()) {
+            throw new BusinessException(400, "请至少选择一个关联学生");
+        }
+        Long userId = UserContext.getUserId();
+        Set<Long> ids = new LinkedHashSet<>();
+        for (Long sid : studentIds) {
+            if (sid == null) {
+                continue;
+            }
+            Student s = studentMapper.findById(sid, userId);
+            if (s == null) {
+                throw new BusinessException(400, "所选学生不存在或已删除");
+            }
+            ids.add(sid);
+        }
+        if (ids.isEmpty()) {
+            throw new BusinessException(400, "请至少选择一个关联学生");
+        }
+        return ids;
     }
 
     private void deleteFile(Attachment a) {

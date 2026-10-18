@@ -18,4 +18,22 @@ public class CoursePageRequest extends PageRequest {
 
     private LocalDateTime start;
     private LocalDateTime end;
+
+    /** 学生姓名模糊查询 */
+    private String studentName;
+
+    /** 科目 */
+    private String subject;
+
+    /** 学段 */
+    private String stage;
+
+    /** 课程类型 */
+    private String courseType;
+
+    /** 上课机构 id */
+    private Long organizationId;
+
+    /** 课程状态 */
+    private String status;
 }

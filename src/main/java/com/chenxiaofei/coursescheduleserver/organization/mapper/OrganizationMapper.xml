@@ -13,8 +13,11 @@
 
     <sql id="orgWhere">
         WHERE user_id = #{userId}
-        <if test="name != null and name != ''">
-            AND name LIKE CONCAT('%', #{name}, '%')
+        <if test="req.name != null and req.name != ''">
+            AND name LIKE CONCAT('%', #{req.name}, '%')
+        </if>
+        <if test="req.address != null and req.address != ''">
+            AND address LIKE CONCAT('%', #{req.address}, '%')
         </if>
     </sql>
 
@@ -35,13 +38,12 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO organization(user_id, name, contact_name, contact_phone, address, color, remark)
-        VALUES(#{userId}, #{name}, #{contactName}, #{contactPhone}, #{address}, #{color}, #{remark})
+        INSERT INTO organization(user_id, name, address, color, remark)
+        VALUES(#{userId}, #{name}, #{address}, #{color}, #{remark})
     </insert>
 
     <update id="update">
-        UPDATE organization SET name = #{name}, contact_name = #{contactName},
-        contact_phone = #{contactPhone}, address = #{address},
+        UPDATE organization SET name = #{name}, address = #{address},
         color = #{color}, remark = #{remark} WHERE id = #{id} AND user_id = #{userId}
     </update>
 

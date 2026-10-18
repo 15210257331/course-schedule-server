@@ -1,12 +1,12 @@
-package com.chenxiaofei.coursescheduleserver.coursetemplate.controller;
+package com.chenxiaofei.coursescheduleserver.student.controller;
 
 import com.chenxiaofei.coursescheduleserver.common.IdRequest;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
-import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplatePageRequest;
-import com.chenxiaofei.coursescheduleserver.coursetemplate.dto.CourseTemplateRequest;
-import com.chenxiaofei.coursescheduleserver.coursetemplate.entity.CourseTemplate;
-import com.chenxiaofei.coursescheduleserver.coursetemplate.service.CourseTemplateService;
+import com.chenxiaofei.coursescheduleserver.student.dto.StudentPageRequest;
+import com.chenxiaofei.coursescheduleserver.student.dto.StudentRequest;
+import com.chenxiaofei.coursescheduleserver.student.entity.Student;
+import com.chenxiaofei.coursescheduleserver.student.service.StudentService;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
@@ -22,43 +22,43 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/course-templates")
+@RequestMapping("/api/students")
 @RequiredArgsConstructor
-public class CourseTemplateController {
+public class StudentController {
 
-    private final CourseTemplateService service;
+    private final StudentService service;
 
     @PostMapping("/list")
-    public Result<List<CourseTemplate>> list(@RequestBody(required = false) Map<String, String> body) {
+    public Result<List<Student>> list(@RequestBody(required = false) Map<String, String> body) {
         String name = (body != null) ? body.get("name") : null;
         String kw = (name == null || name.isBlank()) ? null : name.trim();
         return Result.ok(service.list(kw));
     }
 
     @PostMapping("/page")
-    public Result<PageResult<CourseTemplate>> page(@RequestBody CourseTemplatePageRequest request) {
+    public Result<PageResult<Student>> page(@RequestBody StudentPageRequest request) {
         return Result.ok(service.page(request));
     }
 
     @PostMapping("/detail")
-    public Result<CourseTemplate> get(@RequestBody IdRequest body) {
+    public Result<Student> get(@RequestBody IdRequest body) {
         return Result.ok(service.get(body.getId()));
     }
 
     @PostMapping
-    @OperationLog(module = "course_template", action = "CREATE", detail = "{#request.name}")
-    public Result<CourseTemplate> create(@Valid @RequestBody CourseTemplateRequest request) {
+    @OperationLog(module = "student", action = "CREATE", detail = "{#request.name}")
+    public Result<Student> create(@Valid @RequestBody StudentRequest request) {
         return Result.ok(service.create(request));
     }
 
     @PutMapping("/{id}")
-    @OperationLog(module = "course_template", action = "UPDATE")
-    public Result<CourseTemplate> update(@PathVariable Long id, @Valid @RequestBody CourseTemplateRequest request) {
+    @OperationLog(module = "student", action = "UPDATE")
+    public Result<Student> update(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
         return Result.ok(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @OperationLog(module = "course_template", action = "DELETE")
+    @OperationLog(module = "student", action = "DELETE")
     public Result<Integer> delete(@PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
         boolean withCourses = body != null && Boolean.TRUE.equals(body.get("withCourses"));
         if (withCourses) {
