@@ -1,5 +1,6 @@
 package com.chenxiaofei.coursescheduleserver.admin.service;
 
+import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherDetail;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherListItem;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherPageRequest;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherStatusRequest;
@@ -14,6 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 
 /**
  * 管理端 - 教师（用户）管理
@@ -33,14 +37,18 @@ public class AdminTeacherService {
                 (offset, limit) -> userMapper.pageTeacherItems(req.getStatus(), req.getKeyword(), offset, limit));
     }
 
-    /** 教师详情 */
-    public User detail(Long id) {
-        User user = userMapper.findById(id);
-        if (user == null) {
+    /** 教师详情（含本月 / 上月课程数与收入统计） */
+    public TeacherDetail detail(Long id) {
+        YearMonth now = YearMonth.now();
+        LocalDateTime monthStart = now.atDay(1).atStartOfDay();
+        LocalDateTime monthEnd = now.plusMonths(1).atDay(1).atStartOfDay();
+        LocalDateTime lastMonthStart = now.minusMonths(1).atDay(1).atStartOfDay();
+        LocalDateTime lastMonthEnd = monthStart;
+        TeacherDetail detail = userMapper.findTeacherDetail(id, monthStart, monthEnd, lastMonthStart, lastMonthEnd);
+        if (detail == null) {
             throw new BusinessException(404, "教师不存在");
         }
-        user.setPassword(null);
-        return user;
+        return detail;
     }
 
     /** 禁用/启用 */

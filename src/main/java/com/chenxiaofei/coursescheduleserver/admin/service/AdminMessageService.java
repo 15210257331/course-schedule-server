@@ -47,6 +47,12 @@ public class AdminMessageService {
         return m;
     }
 
+    /** 管理端：消息阅读明细（哪些教师已读 / 未读） */
+    public List<com.chenxiaofei.coursescheduleserver.admin.dto.MessageReadItem> readDetail(Long id) {
+        detail(id);
+        return messageMapper.listReadDetail(id);
+    }
+
     public AdminMessage create(AdminMessageRequest req) {
         validate(req);
         AdminMessage m = new AdminMessage();

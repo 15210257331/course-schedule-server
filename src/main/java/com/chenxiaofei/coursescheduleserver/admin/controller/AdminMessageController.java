@@ -38,6 +38,12 @@ public class AdminMessageController {
         return Result.ok(service.detail(body.getId()));
     }
 
+    /** 阅读明细：哪些教师已读 / 未读 */
+    @PostMapping("/read-detail")
+    public Result<List<com.chenxiaofei.coursescheduleserver.admin.dto.MessageReadItem>> readDetail(@RequestBody IdRequest body) {
+        return Result.ok(service.readDetail(body.getId()));
+    }
+
     @PostMapping
     @OperationLog(module = "message", action = "CREATE")
     public Result<AdminMessage> create(@RequestBody AdminMessageRequest request) {

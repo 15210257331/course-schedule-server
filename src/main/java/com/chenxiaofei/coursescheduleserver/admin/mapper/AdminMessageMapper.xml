@@ -85,4 +85,20 @@
         SELECT message_id FROM admin_message_read WHERE user_id = #{userId}
     </select>
 
+    <!-- 管理端：消息阅读明细（目标教师逐个列出已读/未读；target=all 时为全部在职教师，specific 时为指定教师） -->
+    <select id="listReadDetail" resultType="com.chenxiaofei.coursescheduleserver.admin.dto.MessageReadItem">
+        SELECT u.id, u.username, u.nickname,
+               (r.id IS NOT NULL) AS hasRead,
+               r.read_at AS readAt
+        FROM `user` u
+        LEFT JOIN admin_message_read r ON r.user_id = u.id AND r.message_id = #{messageId}
+        WHERE u.role = 'TEACHER'
+          AND u.status = 'active'
+          AND (
+            (SELECT m.target_type FROM admin_message m WHERE m.id = #{messageId}) = 'all'
+            OR FIND_IN_SET(u.id, (SELECT m2.target_ids FROM admin_message m2 WHERE m2.id = #{messageId})) &gt; 0
+          )
+        ORDER BY hasRead DESC, r.read_at DESC, u.id DESC
+    </select>
+
 </mapper>

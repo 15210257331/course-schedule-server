@@ -1,10 +1,10 @@
 package com.chenxiaofei.coursescheduleserver.admin.controller;
 
+import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherDetail;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherListItem;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherPageRequest;
 import com.chenxiaofei.coursescheduleserver.admin.dto.TeacherStatusRequest;
 import com.chenxiaofei.coursescheduleserver.admin.service.AdminTeacherService;
-import com.chenxiaofei.coursescheduleserver.auth.entity.User;
 import com.chenxiaofei.coursescheduleserver.common.IdRequest;
 import com.chenxiaofei.coursescheduleserver.common.PageResult;
 import com.chenxiaofei.coursescheduleserver.common.Result;
@@ -31,7 +31,7 @@ public class AdminTeacherController {
     }
 
     @PostMapping("/detail")
-    public Result<User> detail(@RequestBody IdRequest body) {
+    public Result<TeacherDetail> detail(@RequestBody IdRequest body) {
         return Result.ok(service.detail(body.getId()));
     }
 

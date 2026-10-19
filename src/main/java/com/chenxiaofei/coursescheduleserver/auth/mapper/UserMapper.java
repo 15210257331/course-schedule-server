@@ -40,4 +40,11 @@ public interface UserMapper {
 
     /** 全部教师简要列表（消息推送选择器用） */
     List<User> listTeachers(@Param("keyword") String keyword);
+
+    /** 管理端：教师详情（含本月/上月课程与收入统计） */
+    com.chenxiaofei.coursescheduleserver.admin.dto.TeacherDetail findTeacherDetail(@Param("id") Long id,
+                                                                                   @Param("monthStart") java.time.LocalDateTime monthStart,
+                                                                                   @Param("monthEnd") java.time.LocalDateTime monthEnd,
+                                                                                   @Param("lastMonthStart") java.time.LocalDateTime lastMonthStart,
+                                                                                   @Param("lastMonthEnd") java.time.LocalDateTime lastMonthEnd);
 }

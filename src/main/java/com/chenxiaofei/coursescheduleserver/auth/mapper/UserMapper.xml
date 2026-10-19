@@ -84,4 +84,26 @@
         LIMIT 200
     </select>
 
+    <!-- 管理端：教师详情（本月/上月课程数与收入，收入口径与教师端一致：end_time < NOW() 视为已上） -->
+    <select id="findTeacherDetail" resultType="com.chenxiaofei.coursescheduleserver.admin.dto.TeacherDetail">
+        SELECT u.id, u.username, u.nickname, u.avatar, u.email, u.phone, u.subjects,
+               u.status, u.disabled_reason AS disabledReason, u.disabled_at AS disabledAt,
+               u.last_login_at AS lastLoginAt, u.created_at AS createdAt,
+               (SELECT COUNT(*) FROM course c
+                 WHERE c.user_id = u.id AND c.start_time &gt;= #{monthStart} AND c.start_time &lt; #{monthEnd}) AS monthTotal,
+               (SELECT COUNT(*) FROM course c
+                 WHERE c.user_id = u.id AND c.start_time &gt;= #{monthStart} AND c.start_time &lt; #{monthEnd}
+                   AND c.end_time &lt; NOW()) AS monthFinished,
+               (SELECT IFNULL(SUM(c.fee), 0) FROM course c
+                 WHERE c.user_id = u.id AND c.start_time &gt;= #{monthStart} AND c.start_time &lt; #{monthEnd}
+                   AND c.end_time &lt; NOW()) AS monthIncome,
+               (SELECT COUNT(*) FROM course c
+                 WHERE c.user_id = u.id AND c.start_time &gt;= #{lastMonthStart} AND c.start_time &lt; #{lastMonthEnd}) AS lastMonthTotal,
+               (SELECT IFNULL(SUM(c.fee), 0) FROM course c
+                 WHERE c.user_id = u.id AND c.start_time &gt;= #{lastMonthStart} AND c.start_time &lt; #{lastMonthEnd}
+                   AND c.end_time &lt; NOW()) AS lastMonthIncome
+        FROM `user` u
+        WHERE u.id = #{id}
+    </select>
+
 </mapper>

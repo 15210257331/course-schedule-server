@@ -39,4 +39,7 @@ public interface AdminMessageMapper {
 
     /** 当前用户已读的消息ID集合 */
     List<Long> listReadMessageIds(@Param("userId") Long userId);
+
+    /** 管理端：消息的阅读明细（目标教师 + 是否已读 + 阅读时间），按未读在前、已读在前段时间倒序 */
+    List<com.chenxiaofei.coursescheduleserver.admin.dto.MessageReadItem> listReadDetail(@Param("messageId") Long messageId);
 }
