@@ -31,7 +31,18 @@ TeacherOS · 兼职教师工作台的后端服务，技术栈：Spring Boot + My
 ```
 
 默认 `root@140.143.168.25`，可用环境变量覆盖：`SSH_HOST / SSH_USER / SSH_PASS / REMOTE_DIR`。
-密码认证时需本机装有 `sshpass`（`brew install sshpass` 或 `brew install esolitos/ipa/sshpass`）；密钥认证则直接可用。
+脚本通过 SSH 连接复用（ControlMaster）让密码认证只做一次：首次连接输一次密码，后续 mkdir / scp / 远程命令全部复用该连接。传了 `SSH_PASS` 且装有 `sshpass` 时可全程免交互（CI 场景）。
+
+### 免密码发布（推荐，一次性配置）
+
+把本机公钥追加到服务器后，发布全程不再需要输密码：
+
+```bash
+ssh-copy-id root@140.143.168.25    # 输最后一次密码，之后密钥自动认证
+./deploy.sh                        # 零交互发布
+```
+
+若本机还没有密钥对，先生成：`ssh-keygen -t rsa -b 4096`。
 
 手动流程（脚本等价于以下步骤）：
 
