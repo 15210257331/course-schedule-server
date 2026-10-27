@@ -3,7 +3,6 @@ package com.chenxiaofei.coursescheduleserver.attachment.entity;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 /**
  * 课件：资源文件元数据，通过 attachment_student 关联表挂到多个学生下。
@@ -25,6 +24,6 @@ public class Attachment {
 
     /** 联表冗余：关联的学生姓名（顿号拼接，课件管理列表用） */
     private String studentName;
-    /** 联表冗余：关联的学生 id 列表 */
-    private List<Long> studentIds;
+    /** 联表冗余：关联的学生 id 逗号串（前端 split 后使用） */
+    private String studentIds;
 }

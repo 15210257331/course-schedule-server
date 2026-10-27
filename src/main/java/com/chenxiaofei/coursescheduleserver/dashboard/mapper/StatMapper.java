@@ -26,6 +26,10 @@ public interface StatMapper {
     List<Map<String, Object>> incomeByDay(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                                           @Param("end") LocalDateTime end);
 
+    /** 每日上课数量（按开始时间归天，不限是否已上完） */
+    List<Map<String, Object>> courseCountByDay(@Param("userId") Long userId, @Param("start") LocalDateTime start,
+                                                @Param("end") LocalDateTime end);
+
     List<Map<String, Object>> incomeByOrganization(@Param("userId") Long userId, @Param("start") LocalDateTime start,
                                                    @Param("end") LocalDateTime end);
 

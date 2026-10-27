@@ -53,20 +53,25 @@
         <include refid="attachmentPageWhere"/>
     </select>
 
-    <!-- 分页主查询：WHERE 先过滤再 GROUP BY 聚合学生（按学生筛选用 EXISTS 关联表） -->
+    <!-- 分页主查询：先按条件分页取课件 id，再只对本页数据聚合学生，避免全量聚合后再截断 -->
     <select id="pageByUser" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">
-        SELECT a.*,
+        SELECT a2.*,
                GROUP_CONCAT(s.student_name ORDER BY r.id SEPARATOR '、') AS student_name,
                GROUP_CONCAT(s.id ORDER BY r.id) AS student_ids
-        FROM attachment a
+        FROM (
+            SELECT a.id
+            FROM attachment a
+            <include refid="attachmentPageWhere"/>
+            ORDER BY a.id DESC
+            LIMIT #{limit} OFFSET #{offset}
+        ) p
+        INNER JOIN attachment a2 ON a2.id = p.id
         LEFT JOIN attachment_student r
-               ON r.attachment_id = a.id AND r.user_id = a.user_id
+               ON r.attachment_id = a2.id AND r.user_id = a2.user_id
         LEFT JOIN student s
                ON s.id = r.student_id AND s.user_id = r.user_id
-        <include refid="attachmentPageWhere"/>
-        GROUP BY a.id, a.user_id, a.file_name, a.file_path, a.file_size, a.mime_type, a.created_at
-        ORDER BY a.id DESC
-        LIMIT #{limit} OFFSET #{offset}
+        GROUP BY a2.id
+        ORDER BY a2.id DESC
     </select>
 
     <select id="findById" resultType="com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment">

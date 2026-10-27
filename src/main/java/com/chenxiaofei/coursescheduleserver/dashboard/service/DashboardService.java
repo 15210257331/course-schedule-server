@@ -70,6 +70,7 @@ public class DashboardService {
     private Map<String, Object> buildReport(Long userId, LocalDateTime start, LocalDateTime end, String settleMonth) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("trend", statMapper.incomeByDay(userId, start, end));
+        result.put("courseTrend", statMapper.courseCountByDay(userId, start, end));
         result.put("byOrganization", statMapper.incomeByOrganization(userId, start, end));
         result.put("byStudent", statMapper.incomeByStudent(userId, start, end));
         result.put("byStage", statMapper.incomeByStage(userId, start, end));

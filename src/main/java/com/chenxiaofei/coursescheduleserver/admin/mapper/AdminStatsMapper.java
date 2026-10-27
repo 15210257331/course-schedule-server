@@ -25,11 +25,20 @@ public interface AdminStatsMapper {
     /** 时间段内课程数 */
     long countCoursesInRange(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
+    /** 学生总数（全体教师） */
+    long countStudents();
+
+    /** 新增学生数（start 起，含当日） */
+    long countNewStudents(@Param("start") LocalDate start);
+
     /** 时间段内新增教师数（按天） */
     List<Map<String, Object>> teacherTrend(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
     /** 时间段内课程数（按天） */
     List<Map<String, Object>> courseTrend(@Param("start") LocalDate start, @Param("end") LocalDate end);
+
+    /** 时间段内新增学生数（按天） */
+    List<Map<String, Object>> studentTrend(@Param("start") LocalDate start, @Param("end") LocalDate end);
 
     /** 已发布消息总数 */
     long countPublishedMessages();

@@ -47,6 +47,9 @@ public class AdminStatsService {
         cards.put("teacherDisabled", disabledTeachers);
         cards.put("teacherNewToday", statsMapper.countNewTeachers(today));
         cards.put("teacherNewMonth", statsMapper.countNewTeachers(monthStart));
+        cards.put("studentTotal", statsMapper.countStudents());
+        cards.put("studentNewToday", statsMapper.countNewStudents(today));
+        cards.put("studentNewMonth", statsMapper.countNewStudents(monthStart));
         cards.put("courseTotal", statsMapper.countCourses());
         cards.put("courseToday", statsMapper.countCoursesInRange(today, today));
         cards.put("courseMonth", statsMapper.countCoursesInRange(monthStart, today));
@@ -59,6 +62,7 @@ public class AdminStatsService {
         // ---- 趋势图（按天补齐） ----
         result.put("teacherTrend", fillDays(trendStart, today, statsMapper.teacherTrend(trendStart, today)));
         result.put("courseTrend", fillDays(trendStart, today, statsMapper.courseTrend(trendStart, today)));
+        result.put("studentTrend", fillDays(trendStart, today, statsMapper.studentTrend(trendStart, today)));
 
         // ---- 最新动态 ----
         List<AdminMessage> recentMessages = statsMapper.recentMessages(5);

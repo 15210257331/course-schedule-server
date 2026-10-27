@@ -24,6 +24,12 @@
         GROUP BY DATE(start_time) ORDER BY day
     </select>
 
+    <select id="courseCountByDay" resultType="map">
+        SELECT DATE(start_time) AS day, COUNT(*) AS count FROM course
+        WHERE user_id = #{userId} AND start_time &gt;= #{start} AND start_time &lt; #{end}
+        GROUP BY DATE(start_time) ORDER BY day
+    </select>
+
     <select id="incomeByOrganization" resultType="map">
         SELECT CASE WHEN c.course_type = '家教'
                     THEN CONCAT('家教-', COALESCE(c.student_name, '未知'))

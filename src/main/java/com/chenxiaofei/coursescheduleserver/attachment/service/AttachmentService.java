@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 课件：资源文件，通过 attachment_student 关联表挂到多个学生下。
@@ -70,11 +71,25 @@ public class AttachmentService {
             for (Long sid : ids) {
                 mapper.insertStudentRef(userId, a.getId(), sid);
             }
-            a.setStudentIds(List.copyOf(ids));
+            a.setStudentIds(ids.stream().map(String::valueOf).collect(Collectors.joining(",")));
             return a;
         } catch (IOException e) {
             throw new BusinessException(500, "文件保存失败：" + e.getMessage());
         }
+    }
+
+    /** 修改课件关联的学生（全量覆盖） */
+    @Transactional
+    public Attachment updateStudents(Long id, List<Long> studentIds) {
+        Attachment a = get(id);
+        Set<Long> ids = normalizeStudentIds(studentIds);
+        Long userId = UserContext.getUserId();
+        mapper.deleteStudentRefsByAttachment(userId, a.getId());
+        for (Long sid : ids) {
+            mapper.insertStudentRef(userId, a.getId(), sid);
+        }
+        a.setStudentIds(ids.stream().map(String::valueOf).collect(Collectors.joining(",")));
+        return a;
     }
 
     /** 解析磁盘绝对路径（供下载与删除） */

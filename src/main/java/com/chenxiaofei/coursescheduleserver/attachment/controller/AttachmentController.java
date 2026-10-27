@@ -1,6 +1,7 @@
 package com.chenxiaofei.coursescheduleserver.attachment.controller;
 
 import com.chenxiaofei.coursescheduleserver.attachment.dto.AttachmentPageRequest;
+import com.chenxiaofei.coursescheduleserver.attachment.dto.AttachmentStudentsRequest;
 import com.chenxiaofei.coursescheduleserver.attachment.entity.Attachment;
 import com.chenxiaofei.coursescheduleserver.attachment.service.AttachmentService;
 import com.chenxiaofei.coursescheduleserver.common.IdRequest;
@@ -11,6 +12,7 @@ import com.chenxiaofei.coursescheduleserver.attachment.mapper.AttachmentMapper;
 import com.chenxiaofei.coursescheduleserver.operationlog.annotation.OperationLog;
 import com.chenxiaofei.coursescheduleserver.security.UserContext;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -57,6 +59,13 @@ public class AttachmentController {
         return Result.ok(Pages.of(request,
                 () -> attachmentMapper.countByUser(userId, request.getStudentId(), keyword),
                 (offset, limit) -> attachmentMapper.pageByUser(userId, request.getStudentId(), keyword, offset, limit)));
+    }
+
+    /** 修改课件关联的学生（全量覆盖） */
+    @PostMapping("/update-students")
+    @OperationLog(module = "attachment", action = "UPDATE")
+    public Result<Attachment> updateStudents(@Valid @RequestBody AttachmentStudentsRequest body) {
+        return Result.ok(service.updateStudents(body.getId(), body.getStudentIds()));
     }
 
     /** 下载：返回文件流，Content-Disposition 带原始文件名（UTF-8 编码支持中文名） */
