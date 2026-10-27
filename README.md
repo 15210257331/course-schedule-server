@@ -23,7 +23,17 @@ TeacherOS · 兼职教师工作台的后端服务，技术栈：Spring Boot + My
 
 ## 生产部署（Docker）
 
-构建脚本：将 Dockerfile 与 jar 包上传到服务器后构建镜像并启动容器。
+一键发布脚本：`./deploy.sh`（本地 Maven 打包 → 上传 Dockerfile 与 jar 到服务器 `/root/web/course-schedule-server`（覆盖旧文件）→ 删除旧容器与镜像 → 构建镜像 → 启动容器）。
+
+```bash
+./deploy.sh                 # 完整流程
+./deploy.sh --skip-build    # 跳过本地打包，直接上传 target 下已有 jar
+```
+
+默认 `root@140.143.168.25`，可用环境变量覆盖：`SSH_HOST / SSH_USER / SSH_PASS / REMOTE_DIR`。
+密码认证时需本机装有 `sshpass`（`brew install sshpass` 或 `brew install esolitos/ipa/sshpass`）；密钥认证则直接可用。
+
+手动流程（脚本等价于以下步骤）：
 
 ```bash
 docker build -t course-schedule-server:latest .

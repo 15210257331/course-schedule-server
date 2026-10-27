@@ -25,7 +25,7 @@ public final class FileUploadValidator {
         return new FileUploadValidator(Set.of(
                 "jpg", "jpeg", "png", "gif", "webp",
                 "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "zip"),
-                20L * 1024 * 1024, "文件");
+                30L * 1024 * 1024, "文件");
     }
 
     /** 头像上传：仅图片，上限 2MB */
